@@ -1,14 +1,22 @@
+import type { ComponentType } from 'react'
 import { Navigate, Outlet, createBrowserRouter, useLocation } from 'react-router'
 import { useSession, type Stage } from '@/state/session'
 import { TabBar } from '@/ui/TabBar'
-import { IntroCircles, IntroOnchain, IntroSave } from '@/screens/onboarding/Intro'
-import { AutoSave, Kyc, Otp, Phone, WalletReady } from '@/screens/auth/Auth'
-import { Home } from '@/screens/home/Home'
-import { AddMoney, Withdraw } from '@/screens/money/Money'
-import { LockedSavings, NewGoal, Save } from '@/screens/save/Save'
-import { CircleDetailScreen, Circles, JoinCircle, MissedPaymentScreen, PayoutScreen } from '@/screens/circles/Circles'
-import { Notifications, Profile, Trust, WhatsApp } from '@/screens/profile/Profile'
-import { DevKit } from '@/screens/dev/DevKit'
+
+/** Route-level code splitting: each screen module becomes its own chunk. */
+type Mod = Record<string, unknown>
+const lazy = <M extends Mod>(load: () => Promise<M>, name: keyof M & string) => async () => ({
+  Component: (await load())[name] as ComponentType,
+})
+
+const auth = () => import('@/screens/auth/Auth')
+const circles = () => import('@/screens/circles/Circles')
+const devkit = () => import('@/screens/dev/DevKit')
+const home = () => import('@/screens/home/Home')
+const money = () => import('@/screens/money/Money')
+const intro = () => import('@/screens/onboarding/Intro')
+const profile = () => import('@/screens/profile/Profile')
+const save = () => import('@/screens/save/Save')
 
 const stageRoute: Record<Stage, string> = {
   intro: '/intro/save',
@@ -43,40 +51,46 @@ function TabsLayout() {
 }
 
 export const router = createBrowserRouter([
-  { path: '/', element: <Start /> },
-  { path: '/intro/save', element: <IntroSave /> },
-  { path: '/intro/circles', element: <IntroCircles /> },
-  { path: '/intro/onchain', element: <IntroOnchain /> },
-  { path: '/auth/phone', element: <Phone /> },
-  { path: '/auth/otp', element: <Otp /> },
-  { path: '/auth/kyc', element: <Kyc /> },
-  { path: '/auth/wallet-ready', element: <WalletReady /> },
-  { path: '/auth/auto-save', element: <AutoSave /> },
-  { path: '/dev/kit', element: <DevKit /> },
   {
-    element: <RequireReady />,
+    // Shown while the first lazy screen chunk loads (blank, matches the dark splash).
+    HydrateFallback: () => null,
     children: [
+      { path: '/', element: <Start /> },
+      { path: '/intro/save', lazy: lazy(intro, 'IntroSave') },
+      { path: '/intro/circles', lazy: lazy(intro, 'IntroCircles') },
+      { path: '/intro/onchain', lazy: lazy(intro, 'IntroOnchain') },
+      { path: '/auth/phone', lazy: lazy(auth, 'Phone') },
+      { path: '/auth/otp', lazy: lazy(auth, 'Otp') },
+      { path: '/auth/kyc', lazy: lazy(auth, 'Kyc') },
+      { path: '/auth/wallet-ready', lazy: lazy(auth, 'WalletReady') },
+      { path: '/auth/auto-save', lazy: lazy(auth, 'AutoSave') },
+      { path: '/dev/kit', lazy: lazy(devkit, 'DevKit') },
       {
-        element: <TabsLayout />,
+        element: <RequireReady />,
         children: [
-          { path: '/home', element: <Home /> },
-          { path: '/save', element: <Save /> },
-          { path: '/circles', element: <Circles /> },
-          { path: '/profile', element: <Profile /> },
+          {
+            element: <TabsLayout />,
+            children: [
+              { path: '/home', lazy: lazy(home, 'Home') },
+              { path: '/save', lazy: lazy(save, 'Save') },
+              { path: '/circles', lazy: lazy(circles, 'Circles') },
+              { path: '/profile', lazy: lazy(profile, 'Profile') },
+            ],
+          },
+          { path: '/money/add', lazy: lazy(money, 'AddMoney') },
+          { path: '/money/withdraw', lazy: lazy(money, 'Withdraw') },
+          { path: '/save/new-goal', lazy: lazy(save, 'NewGoal') },
+          { path: '/save/locked', lazy: lazy(save, 'LockedSavings') },
+          { path: '/circles/:id', lazy: lazy(circles, 'CircleDetailScreen') },
+          { path: '/circles/:id/join', lazy: lazy(circles, 'JoinCircle') },
+          { path: '/circles/:id/payout', lazy: lazy(circles, 'PayoutScreen') },
+          { path: '/circles/:id/missed', lazy: lazy(circles, 'MissedPaymentScreen') },
+          { path: '/notifications', lazy: lazy(profile, 'Notifications') },
+          { path: '/trust', lazy: lazy(profile, 'Trust') },
+          { path: '/whatsapp', lazy: lazy(profile, 'WhatsApp') },
         ],
       },
-      { path: '/money/add', element: <AddMoney /> },
-      { path: '/money/withdraw', element: <Withdraw /> },
-      { path: '/save/new-goal', element: <NewGoal /> },
-      { path: '/save/locked', element: <LockedSavings /> },
-      { path: '/circles/:id', element: <CircleDetailScreen /> },
-      { path: '/circles/:id/join', element: <JoinCircle /> },
-      { path: '/circles/:id/payout', element: <PayoutScreen /> },
-      { path: '/circles/:id/missed', element: <MissedPaymentScreen /> },
-      { path: '/notifications', element: <Notifications /> },
-      { path: '/trust', element: <Trust /> },
-      { path: '/whatsapp', element: <WhatsApp /> },
+      { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
-  { path: '*', element: <Navigate to="/" replace /> },
 ])

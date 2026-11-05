@@ -28,5 +28,20 @@ export default defineConfig({
       workbox: { navigateFallback: '/index.html', globPatterns: ['**/*.{js,css,html,svg,png,woff2}'] },
     }),
   ],
+  build: {
+    rolldownOptions: {
+      output: {
+        // Keep big, rarely-changing vendors in their own long-cacheable chunks.
+        codeSplitting: {
+          groups: [
+            { name: 'react', test: /node_modules[\/](react|react-dom|scheduler)[\/]/ },
+            { name: 'router', test: /node_modules[\/]react-router[\/]/ },
+            { name: 'motion', test: /node_modules[\/](framer-motion|motion-dom|motion-utils)[\/]/ },
+            { name: 'query', test: /node_modules[\/]@tanstack[\/]/ },
+          ],
+        },
+      },
+    },
+  },
   server: { port: 5173 },
 })
