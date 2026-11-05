@@ -3,9 +3,10 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { ApiError } from '@/core/api'
 import { useLogin, useRegister, useForgotPassword, useResetPassword, useSendEmailCode, useSetPin, useVerifyEmail, getApi } from '@/core/data'
+import { useInstall } from '@/app/install'
 import { useTheme } from '@/app/ThemeProvider'
 import { useSession } from '@/state/session'
-import { Button, Dots, Eyebrow, Header, Hero, Icon, Lead, Notice, PinInput, TextField, Tile, errorText, useToast, uiStyles as u, cx } from '@/ui'
+import { Button, Dots, Eyebrow, Header, Hero, Icon, Lead, Notice, PinInput, Row, TextField, Tile, errorText, useToast, uiStyles as u, cx } from '@/ui'
 import { slides } from './Art'
 import a from './auth.module.css'
 import s from './intro.module.css'
@@ -123,6 +124,7 @@ export function Welcome() {
   }
   const last = step === slides.length - 1
   const { scheme } = useTheme()
+  const installer = useInstall()
 
   return (
     <div className={a.page}>
@@ -131,9 +133,16 @@ export function Welcome() {
           {/* Phone: boards 01–03 as a story */}
           <div className={cx(a.welcomeTop, a.phoneOnly)}>
             <img src={scheme === 'dark' ? '/kolofi-logo-light.svg' : '/kolofi-logo.svg'} alt="Kólófi" style={{ height: 22 }} />
-            <Button variant="ghost" onClick={() => go('/login')} style={{ width: 'auto', height: 36, padding: '0 14px' }}>
-              Log in
-            </Button>
+            <Row gap={8}>
+              {installer.available && (
+                <Button variant="ghost" icon="download" onClick={installer.install} style={{ width: 'auto', height: 36, padding: '0 14px' }}>
+                  Install
+                </Button>
+              )}
+              <Button variant="ghost" onClick={() => go('/login')} style={{ width: 'auto', height: 36, padding: '0 14px' }}>
+                Log in
+              </Button>
+            </Row>
           </div>
           <div className={cx(a.welcomeStage, a.phoneOnly)}>
             <AnimatePresence mode="wait">
@@ -189,10 +198,23 @@ export function Welcome() {
                   </span>
                   <Icon name="chevronRight" size={18} />
                 </button>
+                {installer.available && (
+                  <button className={a.choice} onClick={installer.install}>
+                    <Tile size={44} radius={14}>
+                      <Icon name="download" size={20} />
+                    </Tile>
+                    <span style={{ flex: 1 }}>
+                      <span className={a.choiceTitle}>Install the app</span>
+                      <span className={a.choiceSub} style={{ display: 'block' }}>Open Kólófi from your desktop or home screen</span>
+                    </span>
+                    <Icon name="chevronRight" size={18} />
+                  </button>
+                )}
               </div>
             </div>
           </div>
       </div>
+      {installer.dialog}
     </div>
   )
 }

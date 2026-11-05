@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Kólófi',
         short_name: 'Kólófi',
@@ -46,7 +46,7 @@ export default defineConfig(({ mode }) => {
           { src: 'icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
-      workbox: { navigateFallback: '/index.html', globPatterns: ['**/*.{js,css,html,svg,png,woff2}'], globIgnores: ['screenshots/**'] },
+      workbox: { navigateFallback: '/index.html', globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'], globIgnores: ['screenshots/**'] },
       // Serve the manifest and a service worker from `npm run dev` too, so the app can be installed
       // (and the Install button tested) without building. The dev worker caches nothing.
       devOptions: { enabled: true, navigateFallback: 'index.html', suppressWarnings: true },

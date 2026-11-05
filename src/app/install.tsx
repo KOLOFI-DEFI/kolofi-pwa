@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { create } from 'zustand'
 import { Button, Icon, Modal } from '@/ui'
 
@@ -8,7 +8,11 @@ interface InstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
-type Platform = 'prompt' | 'ios' | 'manual'
+/**
+ * How this browser installs a web app. `prompt`: it gave us its own install dialog (Chrome/Edge/Android, when it fires
+ * `beforeinstallprompt`). Everything else needs the user to do it from the browser's own UI, so we show the steps.
+ */
+type Platform = 'prompt' | 'ios' | 'mac-safari' | 'chromium' | 'android' | 'firefox' | 'other'
 
 interface InstallState {
   event: InstallPromptEvent | null
@@ -19,7 +23,17 @@ const standalone = () =>
   typeof window !== 'undefined' &&
   (window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true)
 
-const isIos = () => typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent) && !/crios|fxios|edgios/i.test(navigator.userAgent)
+function detectPlatform(): Exclude<Platform, 'prompt'> {
+  if (typeof navigator === 'undefined') return 'other'
+  const ua = navigator.userAgent
+  const iPadOS = /macintosh/i.test(ua) && navigator.maxTouchPoints > 1
+  if (/iphone|ipad|ipod/i.test(ua) || iPadOS) return 'ios' // every iOS browser adds to the Home Screen via Share
+  if (/android/i.test(ua)) return 'android'
+  if (/firefox/i.test(ua)) return 'firefox'
+  if (/edg\/|chrome\/|chromium\/|opr\//i.test(ua)) return 'chromium'
+  if (/safari/i.test(ua) && /macintosh/i.test(ua)) return 'mac-safari'
+  return 'other'
+}
 
 export const useInstallStore = create<InstallState>(() => ({ event: null, installed: standalone() }))
 
@@ -43,7 +57,7 @@ export function listenForInstall() {
  */
 export function useInstall() {
   const { event, installed } = useInstallStore()
-  const platform: Platform = event ? 'prompt' : isIos() ? 'ios' : 'manual'
+  const platform: Platform = event ? 'prompt' : detectPlatform()
   const [help, setHelp] = useState(false)
 
   const install = async () => {
@@ -53,26 +67,49 @@ export function useInstall() {
     useInstallStore.setState({ event: null, installed: outcome === 'accepted' })
   }
 
-  // Offer it when the browser can prompt, or on iPhone/iPad Safari; elsewhere the button would only show instructions.
-  const available = !installed && (platform === 'prompt' || platform === 'ios')
+  // Offer it whenever we are not already running as the installed app. Browsers often hold back their own
+  // prompt (not yet "engaged", dismissed before, or no prompt at all in Safari/Firefox), so without the event
+  // the button explains how to install from the browser instead of disappearing.
+  const available = !installed
 
   const dialog = <InstallHelp open={help} onClose={() => setHelp(false)} platform={platform} />
   return { available, installed, platform, install, dialog }
 }
 
 function InstallHelp({ open, onClose, platform }: { open: boolean; onClose: () => void; platform: Platform }) {
-  const steps =
-    platform === 'ios'
-      ? [
-          <>Tap the <b>Share</b> button in Safari’s toolbar.</>,
-          <>Scroll down and tap <b>Add to Home Screen</b>.</>,
-          <>Tap <b>Add</b>. Kólófi opens from your home screen like any app.</>,
-        ]
-      : [
-          <>Open your browser’s menu.</>,
-          <>Choose <b>Install Kólófi</b> or <b>Add to Home screen</b>.</>,
-          <>Confirm. Kólófi then opens in its own window.</>,
-        ]
+  const steps: Record<Platform, ReactNode[]> = {
+    prompt: [],
+    ios: [
+      <>Tap the <b>Share</b> button in your browser’s toolbar.</>,
+      <>Scroll down and tap <b>Add to Home Screen</b>.</>,
+      <>Tap <b>Add</b>. Kólófi opens from your home screen like any app.</>,
+    ],
+    android: [
+      <>Open your browser’s <b>⋮</b> menu.</>,
+      <>Tap <b>Install app</b> or <b>Add to Home screen</b>.</>,
+      <>Confirm. Kólófi opens from your home screen like any app.</>,
+    ],
+    'mac-safari': [
+      <>In Safari’s menu bar, open <b>File</b>.</>,
+      <>Choose <b>Add to Dock…</b></>,
+      <>Click <b>Add</b>. Kólófi opens from your Dock in its own window.</>,
+    ],
+    chromium: [
+      <>Click the <b>install</b> icon at the right of the address bar, or open the browser’s <b>⋮</b> menu.</>,
+      <>Choose <b>Install Kólófi</b> (in Chrome: <b>Cast, save and share → Install page as app</b>).</>,
+      <>Already installed? Open Kólófi from your apps or desktop instead.</>,
+    ],
+    firefox: [
+      <>Firefox on desktop can’t install web apps yet.</>,
+      <>Open this page in <b>Chrome</b>, <b>Edge</b> or <b>Safari</b>.</>,
+      <>Then choose <b>Install</b> (or <b>Add to Dock</b> in Safari).</>,
+    ],
+    other: [
+      <>Open your browser’s menu.</>,
+      <>Choose <b>Install</b> or <b>Add to Home screen</b>.</>,
+      <>Confirm. Kólófi then opens in its own window.</>,
+    ],
+  }
   return (
     <Modal
       open={open}
@@ -82,7 +119,7 @@ function InstallHelp({ open, onClose, platform }: { open: boolean; onClose: () =
       footer={<Button onClick={onClose}>Got it</Button>}
     >
       <ol style={{ display: 'grid', gap: 14, margin: '16px 0 0', padding: 0, listStyle: 'none' }}>
-        {steps.map((s, i) => (
+        {steps[platform].map((s, i) => (
           <li key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', fontSize: 15, lineHeight: '22px', color: 'var(--body)' }}>
             <span
               style={{
