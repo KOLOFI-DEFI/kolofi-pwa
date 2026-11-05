@@ -47,6 +47,9 @@ export default defineConfig(({ mode }) => {
         ],
       },
       workbox: { navigateFallback: '/index.html', globPatterns: ['**/*.{js,css,html,svg,png,woff2}'], globIgnores: ['screenshots/**'] },
+      // Serve the manifest and a service worker from `npm run dev` too, so the app can be installed
+      // (and the Install button tested) without building. The dev worker caches nothing.
+      devOptions: { enabled: true, navigateFallback: 'index.html', suppressWarnings: true },
     }),
   ],
   build: {
