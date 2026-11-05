@@ -1,0 +1,238 @@
+/* ═══ Notifications ═══
+   Phone (board 18): category chips, then Today / This week / Earlier groups of list cards with an
+   unread dot. Tapping opens what the notification is about.
+   Desktop (≥1100): a two-pane inbox. List on the left, the selected notification's full text and
+   action on the right (sticky). */
+
+.phoneOnly {
+  display: contents;
+}
+.deskBtn {
+  display: none;
+}
+
+.filters {
+  margin: 2px 0 6px;
+}
+.layout {
+  display: block;
+}
+.list {
+  min-width: 0;
+}
+.skel {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+.group {
+  margin-top: 20px;
+}
+.groupTitle {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+}
+:global([data-theme='dark']) .card {
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  text-align: left;
+  transition: background 0.15s;
+}
+.item + .item {
+  border-top: 1px solid var(--line);
+}
+.item:hover {
+  background: color-mix(in srgb, var(--surface2) 55%, transparent);
+}
+.itemMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.itemTitle {
+  font-size: 15px;
+  font-weight: 500;
+}
+.unread .itemTitle {
+  font-weight: 650;
+}
+.itemBody {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.itemSide {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.itemWhen {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--sig);
+}
+.more {
+  margin-top: 18px;
+}
+.pane {
+  display: none;
+}
+
+/* Detail (dialog on phones, reading pane on desktop) */
+.detail {
+  display: flex;
+  flex-direction: column;
+}
+.detailTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.detailCat {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.detailTitle {
+  font-family: var(--font-display);
+  font-size: 30px;
+  line-height: 36px;
+  font-weight: 400;
+  letter-spacing: -0.3px;
+  margin-top: 22px;
+}
+.detailWhen {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 8px;
+}
+.detailCompact .detailWhen {
+  margin-top: 0;
+}
+.detailBody {
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--body);
+  margin-top: 16px;
+}
+.detailRef {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--surface2);
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.detailRef :last-child {
+  color: var(--text);
+}
+.detailBtn {
+  margin-top: 24px;
+}
+
+@media (min-width: 768px) {
+  .item {
+    padding: 16px 20px;
+  }
+  .more {
+    width: auto;
+    padding: 0 24px;
+  }
+}
+
+/* ═══ Desktop: two-pane inbox ═══ */
+@media (min-width: 1100px) {
+  .phoneOnly {
+    display: none;
+  }
+  .deskBtn {
+    display: inline-flex;
+    width: auto;
+    height: 44px;
+    padding: 0 20px;
+    font-size: 15px;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(380px, 460px) minmax(0, 1fr);
+    gap: 28px;
+    align-items: start;
+  }
+  .group:first-child {
+    margin-top: 14px;
+  }
+  .item {
+    border-radius: 0;
+  }
+  .active,
+  .active:hover {
+    background: var(--sig-tint);
+    box-shadow: inset 3px 0 0 var(--sig);
+  }
+  .pane {
+    display: block;
+    position: sticky;
+    top: 28px;
+    margin-top: 14px;
+    min-height: 420px;
+    padding: 32px 36px;
+    border-radius: 24px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+  }
+  :global([data-theme='dark']) .pane {
+    background: color-mix(in srgb, var(--surface) 70%, transparent);
+  }
+  .detailTitle {
+    font-size: 34px;
+    line-height: 40px;
+  }
+  .detailBody {
+    max-width: 620px;
+    font-size: 16.5px;
+    line-height: 26px;
+  }
+  .detailBtn {
+    width: auto;
+    align-self: flex-start;
+    padding: 0 24px;
+  }
+}

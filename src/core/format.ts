@@ -1,4 +1,7 @@
-import type { Minor } from './types'
+import type { Dec } from './types'
+
+/** Integer minor units (USDT cents). */
+export type Minor = number
 
 const nf2 = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const nf0 = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
@@ -126,3 +129,53 @@ export function firstDebitDate(frequency: 'daily' | 'weekly' | 'monthly', today:
 }
 
 export const perMonth = { daily: 30, weekly: 4.33, monthly: 1 } as const
+
+/* ───────── API decimal strings ───────── */
+
+/** "74.5" → 7450 cents. API money is a decimal string; cents keep the display maths exact enough for 2dp. */
+export const cents = (d: Dec | null | undefined): Minor => Math.round(parseFloat(d || '0') * 100)
+
+/** "74.5" → "74.50"; options as `usdt()`. */
+export const money = (d: Dec | null | undefined, opts: { decimals?: 0 | 2; sign?: boolean } = {}) => usdt(cents(d), opts)
+
+/** User input "1,250.5" → "1250.5", or null when it is not a positive amount. */
+export function parseAmount(input: string, maxDecimals = 6): Dec | null {
+  const v = input.replace(/[,\s]/g, '')
+  if (!new RegExp(`^\\d{1,12}(\\.\\d{1,${maxDecimals}})?$`).test(v)) return null
+  return parseFloat(v) > 0 ? v.replace(/^0+(?=\d)/, '') : null
+}
+
+/** "8.00" → "8%", "12.50" → "12.5%" */
+export const percent = (d: Dec | number | null | undefined) => `${parseFloat(String(d ?? 0)).toString()}%`
+
+/** Local date and time: "Nov 5, 2026 · 14:03" */
+export function dateTime(iso: string): string {
+  const d = new Date(iso)
+  return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} · ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+/** Local short date: "Nov 5" (adds the year when it is not this year). */
+export function shortDate(iso: string): string {
+  const d = new Date(iso)
+  const base = `${MONTHS[d.getMonth()]} ${d.getDate()}`
+  return d.getFullYear() === new Date().getFullYear() ? base : `${base}, ${d.getFullYear()}`
+}
+
+/** "just now", "5m ago", "3h ago", "2d ago", then a short date. */
+export function timeAgo(iso: string, now = Date.now()): string {
+  const s = Math.round((now - new Date(iso).getTime()) / 1000)
+  if (s < 60) return 'just now'
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`
+  if (s < 7 * 86400) return `${Math.floor(s / 86400)}d ago`
+  return shortDate(iso)
+}
+
+/** Whole days from now until an ISO date (negative when past). */
+export const daysUntil = (iso: string, now = Date.now()) => Math.ceil((new Date(iso).getTime() - now) / 86_400_000)
+
+/** "trc20" → "TRON (TRC-20)" */
+export const networkLabel = (n: string) => ({ trc20: 'TRON (TRC-20)', bep20: 'BNB Chain (BEP-20)' })[n] ?? n.toUpperCase()
+
+/** "weekly" → "week" */
+export const cycleNoun = (c: string) => ({ weekly: 'week', monthly: 'month', daily: 'day' })[c] ?? c

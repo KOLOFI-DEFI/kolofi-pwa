@@ -1,413 +1,588 @@
-import { motion } from 'framer-motion'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router'
-import { MOCK_TODAY } from '@/core/api'
-import { dayMonthDay, groupDigits, groupPhone, ngn, ngnToUsdt, shortAddress, usdt, weekdayLong, firstDebitDate } from '@/core/format'
-import type { Frequency } from '@/core/types'
-import {
-  useBanks, useCreateMandate, useMe, useRates, useResolveAccount, useSendOtp, useVerifyIdentity, useVerifyOtp,
-} from '@/core/data'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router'
+import { ApiError } from '@/core/api'
+import { useLogin, useRegister, useForgotPassword, useResetPassword, useSendEmailCode, useSetPin, useVerifyEmail, getApi } from '@/core/data'
+import { useTheme } from '@/app/ThemeProvider'
 import { useSession } from '@/state/session'
-import {
-  Button, Card, Chips, Eyebrow, Header, HeaderMono, Hero, Icon, Lead, Row, Screen, Segmented, Stack, StepBars,
-  TextField, Toggle, Tile, useToast, uiStyles as u, cx,
-} from '@/ui'
+import { Button, Dots, Eyebrow, Header, Hero, Icon, Lead, Notice, PinInput, TextField, Tile, errorText, useToast, uiStyles as u, cx } from '@/ui'
+import { slides } from './Art'
 import a from './auth.module.css'
+import s from './intro.module.css'
 
-/* ───────── 04 Phone ───────── */
-export function Phone() {
-  const nav = useNavigate()
-  const session = useSession()
-  const [phone, setPhone] = useState(session.phone || '')
-  const [wa, setWa] = useState(session.whatsappReminders)
-  const send = useSendOtp()
-  const digits = phone.replace(/\D/g, '')
-  const valid = digits.length === 10
+/* ═════════ Layout ═════════ */
 
-  const submit = async () => {
-    const res = await send.mutateAsync({ phone: `+234${digits}`, whatsappReminders: wa })
-    session.setPhone(digits, wa)
-    session.setOtpRequest(res.requestId)
-    session.setStage('otp')
-    nav('/auth/otp')
-  }
+/** Rotates through the three product stories on the desktop brand panel. */
+function useSlide(start = 0, ms = 6500) {
+  const [i, setI] = useState(start)
+  useEffect(() => {
+    const t = setInterval(() => setI((x) => (x + 1) % slides.length), ms)
+    return () => clearInterval(t)
+  }, [ms])
+  return [i, setI] as const
+}
+
+function BrandPanel({ start = 0 }: { start?: number }) {
+  const [i, setI] = useSlide(start)
+  const slide = slides[i]!
   return (
-    <Screen
-      header={
-        <>
-          <Header step="Step 1 of 2" back={() => nav('/intro/onchain')} />
-          <StepBars total={2} current={1} />
-        </>
-      }
-      footer={
-        <>
-          <p className={a.terms}>By continuing you agree to Kólófi’s Terms and Privacy Policy.</p>
-          <Button disabled={!valid} loading={send.isPending} onClick={submit}>
-            Send code
-          </Button>
-        </>
-      }
-    >
-      <Hero>What’s your phone number?</Hero>
-      <Lead style={{ marginTop: 12 }}>We’ll text you a 6-digit code. This number also gets your WhatsApp reminders.</Lead>
-      <Row gap={10} style={{ marginTop: 28 }} align="stretch">
-        <div className={cx(u.field, a.cc)}>
-          <span className={a.flag} aria-hidden>
-            <i />
-            <i />
-            <i />
-          </span>
-          <span className={a.ccText}>+234</span>
+    <aside className={a.brand} aria-hidden="false">
+      <img className={a.brandLogo} src="/kolofi-logo-light.svg" alt="Kólófi" />
+      <div className={a.brandArt}>
+        <AnimatePresence mode="wait">
+          <motion.div key={i} initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.45 }}>
+            {slide.art}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+      <div className={a.brandCopy}>
+        <AnimatePresence mode="wait">
+          <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.35 }}>
+            <Eyebrow accent>{slide.eyebrow}</Eyebrow>
+            <h2 className={a.brandTitle}>{slide.title}</h2>
+            <p className={a.brandLead}>{slide.lead}</p>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+      <div className={a.brandFoot}>
+        <div className={a.brandDots} role="tablist" aria-label="Story">
+          {slides.map((sl, n) => (
+            <button key={n} role="tab" aria-selected={n === i} aria-label={sl.eyebrow} className={cx(a.brandDot, n === i && a.brandDotOn)} onClick={() => setI(n)} />
+          ))}
         </div>
-        <div style={{ flex: 1 }}>
-          <TextField
-            aria-label="Phone number"
-            inputMode="numeric"
-            autoComplete="tel-national"
-            autoFocus
-            placeholder="803 412 7790"
-            value={groupPhone(phone)}
-            onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').replace(/^0/, '').slice(0, 10))}
-            active={digits.length > 0}
-          />
-        </div>
-      </Row>
-      {send.error && <div className={u.fieldError}>{(send.error as Error).message}</div>}
-      <Card style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 14, padding: '16px 16px 16px 18px' }}>
-        <Tile tone="whatsapp" size={40} radius={10}>
-          <Icon name="whatsapp" size={22} color="#fff" inverse="var(--whatsapp)" />
-        </Tile>
-        <div style={{ flex: 1 }}>
-          <div className={u.rowTitle} style={{ fontSize: 15 }}>WhatsApp reminders</div>
-          <div className={u.rowSub}>Before every payment and on pot day</div>
-        </div>
-        <Toggle on={wa} onChange={setWa} label="WhatsApp reminders" />
-      </Card>
-    </Screen>
+        <span className={a.brandSafe}>
+          <Icon name="shield" size={14} />
+          Save in USDT · Join ajo circles
+        </span>
+      </div>
+    </aside>
   )
 }
 
-/* ───────── OTP (not in the boards — added, same visual language) ───────── */
-export function Otp() {
+interface AuthLayoutProps {
+  title: ReactNode
+  lead?: ReactNode
+  eyebrow?: string
+  children: ReactNode
+  actions: ReactNode
+  onSubmit: () => void
+  back?: string | (() => void)
+  top?: { text: string; label: string; to: string }
+  slide?: number
+}
+
+/** Phone: the board's single column with sticky actions. Desktop: brand panel left, form right. */
+function AuthLayout({ title, lead, eyebrow, children, actions, onSubmit, back, top, slide }: AuthLayoutProps) {
   const nav = useNavigate()
-  const session = useSession()
+  const submit = (e: FormEvent) => {
+    e.preventDefault()
+    onSubmit()
+  }
+  return (
+    <div className={a.page}>
+      <BrandPanel start={slide} />
+      <div className={a.formSide}>
+        <div className={a.topbar}>
+          {back ? <Header back={typeof back === 'string' ? () => nav(back) : back} /> : <span />}
+          {top && (
+            <span className={a.topLink}>
+              {top.text}
+              <Link to={top.to}>{top.label}</Link>
+            </span>
+          )}
+        </div>
+        <div className={a.formWrap}>
+          <form className={a.form} onSubmit={submit} noValidate>
+            {eyebrow && <Eyebrow accent style={{ marginBottom: 12 }}>{eyebrow}</Eyebrow>}
+            <Hero>{title}</Hero>
+            {lead && <Lead style={{ marginTop: 12 }}>{lead}</Lead>}
+            {children}
+            <div className={a.actions}>{actions}</div>
+          </form>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Field errors from a failed request, keyed by API field name. */
+function useFieldErrors(error: unknown) {
+  return (name: string) => (error instanceof ApiError ? error.field(name) : undefined)
+}
+const formError = (error: unknown) => (error && !(error instanceof ApiError && error.code === 'VALIDATION' && Object.keys(error.fields).length) ? errorText(error) : null)
+
+/* ═════════ Welcome ═════════ */
+export function Welcome() {
+  const nav = useNavigate()
+  const setIntroSeen = useSession((x) => x.setIntroSeen)
+  const [step, setStep] = useState(0)
+  const slide = slides[step]!
+  const go = (to: string) => {
+    setIntroSeen()
+    nav(to)
+  }
+  const last = step === slides.length - 1
+  const { scheme } = useTheme()
+
+  return (
+    <div className={a.page}>
+      <BrandPanel />
+      <div className={cx(a.formSide, a.welcomeSide)}>
+          {/* Phone: boards 01–03 as a story */}
+          <div className={cx(a.welcomeTop, a.phoneOnly)}>
+            <img src={scheme === 'dark' ? '/kolofi-logo-light.svg' : '/kolofi-logo.svg'} alt="Kólófi" style={{ height: 22 }} />
+            <Button variant="ghost" onClick={() => go('/login')} style={{ width: 'auto', height: 36, padding: '0 14px' }}>
+              Log in
+            </Button>
+          </div>
+          <div className={cx(a.welcomeStage, a.phoneOnly)}>
+            <AnimatePresence mode="wait">
+              <motion.div key={step} initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
+                {slide.art}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+          <div className={cx(a.welcomeCopy, a.phoneOnly)}>
+            <Dots total={slides.length} current={step} />
+            <Eyebrow accent style={{ marginTop: 18 }}>
+              {slide.eyebrow}
+            </Eyebrow>
+            <Hero style={{ marginTop: 14 }}>{slide.title}</Hero>
+            <Lead style={{ marginTop: 14 }}>{slide.lead}</Lead>
+            <div className={s.cta}>
+              <Button glow onClick={() => (last ? go('/signup') : setStep(step + 1))}>
+                {last ? 'Create your account' : 'Continue'}
+              </Button>
+              <p className={s.login}>
+                Already have an account?{' '}
+                <button onClick={() => go('/login')}>
+                  <b>Log in</b>
+                </button>
+              </p>
+            </div>
+          </div>
+
+          {/* Desktop: a choice panel beside the story */}
+          <div className={cx(a.formWrap, a.desktopWelcome)}>
+            <div className={a.form}>
+              <div className={a.welcomeChoices}>
+                <Eyebrow accent>Welcome to Kólófi</Eyebrow>
+                <Hero style={{ marginTop: 4 }}>Your money, saved in dollars and shared fairly.</Hero>
+                <Lead style={{ marginTop: 4, marginBottom: 12 }}>Open an account in two minutes. All you need is an email address and a Nigerian phone number.</Lead>
+                <button className={a.choice} onClick={() => go('/signup')}>
+                  <Tile tone="sig" size={44} radius={14}>
+                    <Icon name="plus" size={20} />
+                  </Tile>
+                  <span style={{ flex: 1 }}>
+                    <span className={a.choiceTitle}>Create an account</span>
+                    <span className={a.choiceSub} style={{ display: 'block' }}>Save in USDT and join circles</span>
+                  </span>
+                  <Icon name="chevronRight" size={18} />
+                </button>
+                <button className={a.choice} onClick={() => go('/login')}>
+                  <Tile size={44} radius={14}>
+                    <Icon name="user" size={20} />
+                  </Tile>
+                  <span style={{ flex: 1 }}>
+                    <span className={a.choiceTitle}>Log in</span>
+                    <span className={a.choiceSub} style={{ display: 'block' }}>Welcome back</span>
+                  </span>
+                  <Icon name="chevronRight" size={18} />
+                </button>
+              </div>
+            </div>
+          </div>
+      </div>
+    </div>
+  )
+}
+
+/* ═════════ Log in ═════════ */
+export function Login() {
+  const nav = useNavigate()
+  const signIn = useSession((x) => x.signIn)
+  const login = useLogin()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const fe = useFieldErrors(login.error)
+
+  const submit = async () => {
+    if (!email || !password) return
+    const res = await login.mutateAsync({ email: email.trim(), password }).catch(() => null)
+    if (res) {
+      signIn(res.token, res.user)
+      nav('/', { replace: true })
+    }
+  }
+
+  return (
+    <AuthLayout
+      back="/welcome"
+      top={{ text: 'New to Kólófi?', label: 'Create account', to: '/signup' }}
+      eyebrow="Welcome back"
+      title="Log in to Kólófi"
+      lead="Use the email and password you signed up with."
+      onSubmit={submit}
+      slide={0}
+      actions={
+        <>
+          <Button type="submit" disabled={!email || !password} loading={login.isPending}>
+            Log in
+          </Button>
+          <p className={cx(a.switch, a.phoneOnly)}>
+            New to Kólófi? <Link to="/signup">Create an account</Link>
+          </p>
+        </>
+      }
+    >
+      <div className={a.fields}>
+        <TextField label="Email" type="email" autoComplete="email" sans value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" error={fe('email')} autoFocus />
+        <TextField label="Password" type="password" autoComplete="current-password" sans value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your password" error={fe('password')} />
+        <Link to="/forgot-password" className={a.forgot}>
+          Forgot password?
+        </Link>
+        {formError(login.error) && <Notice tone="flare" icon="info">{formError(login.error)}</Notice>}
+      </div>
+    </AuthLayout>
+  )
+}
+
+/* ═════════ Sign up ═════════ */
+const rules = [
+  { label: '10+ characters', test: (p: string) => p.length >= 10 },
+  { label: 'Upper & lower case', test: (p: string) => /[a-z]/.test(p) && /[A-Z]/.test(p) },
+  { label: 'A number', test: (p: string) => /\d/.test(p) },
+]
+
+export function Signup() {
+  const nav = useNavigate()
+  const signIn = useSession((x) => x.signIn)
+  const register = useRegister()
+  const [f, setF] = useState({ first_name: '', last_name: '', email: '', phone: '', password: '', confirm: '' })
+  const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value }))
+  const fe = useFieldErrors(register.error)
+  const digits = f.phone.replace(/\D/g, '').replace(/^0/, '').slice(0, 10)
+  const strong = rules.every((r) => r.test(f.password))
+  const ready = f.first_name && f.last_name && f.email.includes('@') && digits.length === 10 && strong && f.password === f.confirm
+
+  const submit = async () => {
+    if (!ready) return
+    const res = await register
+      .mutateAsync({ first_name: f.first_name.trim(), last_name: f.last_name.trim(), email: f.email.trim(), phone: `+234${digits}`, password: f.password, password_confirmation: f.confirm })
+      .catch(() => null)
+    if (res) {
+      signIn(res.token, res.user)
+      nav('/auth/verify', { replace: true })
+    }
+  }
+
+  return (
+    <AuthLayout
+      back="/welcome"
+      top={{ text: 'Already have an account?', label: 'Log in', to: '/login' }}
+      eyebrow="Step 1 of 3"
+      title="Create your account"
+      lead="We’ll send a code to your email to confirm it’s you."
+      onSubmit={submit}
+      slide={1}
+      actions={
+        <>
+          <p className={a.terms}>By continuing you agree to Kólófi’s Terms and Privacy Policy.</p>
+          <Button type="submit" disabled={!ready} loading={register.isPending}>
+            Create account
+          </Button>
+          <p className={cx(a.switch, a.phoneOnly)}>
+            Already have an account? <Link to="/login">Log in</Link>
+          </p>
+        </>
+      }
+    >
+      <div className={a.fields}>
+        <div className={a.row2}>
+          <TextField label="First name" sans autoComplete="given-name" value={f.first_name} onChange={set('first_name')} error={fe('first_name')} autoFocus />
+          <TextField label="Last name" sans autoComplete="family-name" value={f.last_name} onChange={set('last_name')} error={fe('last_name')} />
+        </div>
+        <TextField label="Email" type="email" sans autoComplete="email" value={f.email} onChange={set('email')} placeholder="you@example.com" error={fe('email')} />
+        <TextField
+          label="Phone number"
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel-national"
+          value={f.phone}
+          onChange={set('phone')}
+          placeholder="803 123 4567"
+          error={fe('phone')}
+          leading={
+            <span className={cx(a.cc)} style={{ display: 'inline-flex', alignItems: 'center', paddingLeft: 0 }}>
+              <span className={a.flag} aria-hidden>
+                <i />
+                <i />
+                <i />
+              </span>
+              <span className={a.ccText}>+234</span>
+            </span>
+          }
+        />
+        <div>
+          <TextField label="Password" type="password" sans autoComplete="new-password" value={f.password} onChange={set('password')} error={fe('password')} />
+          <div className={a.rules}>
+            {rules.map((r) => (
+              <span key={r.label} className={cx(r.test(f.password) && a.ruleOk)}>
+                <Icon name={r.test(f.password) ? 'check' : 'personal'} size={12} style={{ verticalAlign: -1, marginRight: 4 }} />
+                {r.label}
+              </span>
+            ))}
+          </div>
+        </div>
+        <TextField
+          label="Confirm password"
+          type="password"
+          sans
+          autoComplete="new-password"
+          value={f.confirm}
+          onChange={set('confirm')}
+          error={f.confirm && f.confirm !== f.password ? 'The passwords do not match.' : undefined}
+        />
+        {formError(register.error) && <Notice tone="flare" icon="info">{formError(register.error)}</Notice>}
+      </div>
+    </AuthLayout>
+  )
+}
+
+/* ═════════ Verify email ═════════ */
+export function VerifyEmail() {
+  const nav = useNavigate()
+  const toast = useToast()
+  const { user, setUser, signOut } = useSession()
+  const verify = useVerifyEmail()
+  const resend = useSendEmailCode()
   const [code, setCode] = useState('')
-  const [left, setLeft] = useState(45)
-  const verify = useVerifyOtp()
-  const resend = useSendOtp()
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [wait, setWait] = useState(60)
 
   useEffect(() => {
-    const t = setInterval(() => setLeft((l) => Math.max(0, l - 1)), 1000)
-    return () => clearInterval(t)
-  }, [])
+    if (wait <= 0) return
+    const t = setTimeout(() => setWait(wait - 1), 1000)
+    return () => clearTimeout(t)
+  }, [wait])
 
+  const submit = async () => {
+    if (code.length !== 6) return
+    const ok = await verify.mutateAsync(code).catch(() => null)
+    if (ok && user) {
+      setUser({ ...user, email_verified: true })
+      nav('/auth/pin', { replace: true })
+    } else setCode('')
+  }
   useEffect(() => {
-    if (code.length !== 6 || !session.otpRequestId) return
-    verify.mutateAsync({ requestId: session.otpRequestId, code }).then(
-      (r) => {
-        session.signIn(r.token)
-        session.setStage('kyc')
-        nav('/auth/kyc')
-      },
-      () => setCode(''),
-    )
+    if (code.length === 6) void submit()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code])
 
   return (
-    <Screen
-      header={
+    <AuthLayout
+      back={() => {
+        signOut()
+        nav('/login')
+      }}
+      eyebrow="Step 2 of 3"
+      title="Check your email"
+      lead={
         <>
-          <Header step="Step 1 of 2" />
-          <StepBars total={2} current={1} />
+          Enter the 6-digit code we sent to <b style={{ color: 'var(--text)' }}>{user?.email}</b>.
         </>
       }
-      footer={
-        <Button
-          variant="secondary"
-          disabled={left > 0}
-          onClick={async () => {
-            const r = await resend.mutateAsync({ phone: `+234${session.phone}`, whatsappReminders: session.whatsappReminders })
-            session.setOtpRequest(r.requestId)
-            setLeft(45)
-          }}
-        >
-          {left > 0 ? `Resend code in 0:${String(left).padStart(2, '0')}` : 'Resend code'}
+      onSubmit={submit}
+      slide={2}
+      actions={
+        <Button type="submit" disabled={code.length !== 6} loading={verify.isPending}>
+          Verify email
         </Button>
       }
     >
-      <Hero>Enter the code</Hero>
-      <Lead style={{ marginTop: 12 }}>
-        We sent a 6-digit code to <b style={{ color: 'var(--text)', fontWeight: 600 }}>+234 {groupPhone(session.phone)}</b>.
-      </Lead>
-      <label className={a.otp} onClick={() => inputRef.current?.focus()}>
-        {Array.from({ length: 6 }, (_, i) => (
-          <span key={i} className={cx(u.field, a.otpBox, i === code.length && u.fieldActive)}>
-            {code[i] ?? ''}
+      <PinInput value={code} onChange={setCode} reveal label="Email code" error={!!verify.error} />
+      {verify.error && <div style={{ color: 'var(--flare)', fontSize: 14 }}>{errorText(verify.error)}</div>}
+      <p className={a.resend}>
+        Didn’t get it?{' '}
+        <button
+          type="button"
+          disabled={wait > 0 || resend.isPending}
+          onClick={async () => {
+            await resend.mutateAsync().then(() => toast('New code sent'), (e) => toast(errorText(e)))
+            setWait(60)
+          }}
+        >
+          {wait > 0 ? `Resend in 0:${String(wait).padStart(2, '0')}` : 'Send a new code'}
+        </button>
+      </p>
+    </AuthLayout>
+  )
+}
+
+/* ═════════ Transaction PIN ═════════ */
+export function SetPin() {
+  const nav = useNavigate()
+  const { user, setUser } = useSession()
+  const setPin = useSetPin()
+  const [step, setStep] = useState<0 | 1 | 2>(0)
+  const [pin, setPinValue] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [password, setPassword] = useState('')
+  const weak = ['000000', '111111', '123456', '654321', '121212'].includes(pin)
+  const fe = useFieldErrors(setPin.error)
+
+  const submit = async () => {
+    if (step === 0 && pin.length === 6 && !weak) return setStep(1)
+    if (step === 1 && confirm.length === 6) return confirm === pin ? setStep(2) : setConfirm('')
+    if (step === 2 && password) {
+      const ok = await setPin.mutateAsync({ password, pin, pin_confirmation: confirm }).then(() => true, () => false)
+      if (ok) {
+        const me = await getApi().me.get().catch(() => null)
+        setUser(me ?? { ...user!, has_transaction_pin: true })
+        nav('/home', { replace: true })
+      }
+    }
+  }
+
+  const titles = ['Choose a transaction PIN', 'Enter it again', 'Confirm with your password']
+  const leads = [
+    'You’ll use these 6 digits to approve withdrawals, savings and circle payments.',
+    'Just to make sure it’s right.',
+    'For your security, we need your account password to set a PIN.',
+  ]
+
+  return (
+    <AuthLayout
+      back={step > 0 ? () => setStep((step - 1) as 0 | 1) : undefined}
+      eyebrow="Step 3 of 3"
+      title={titles[step]}
+      lead={leads[step]}
+      onSubmit={submit}
+      slide={1}
+      actions={
+        <Button type="submit" loading={setPin.isPending} disabled={(step === 0 && (pin.length !== 6 || weak)) || (step === 1 && confirm.length !== 6) || (step === 2 && !password)}>
+          {step === 2 ? 'Set PIN and continue' : 'Continue'}
+        </Button>
+      }
+    >
+      <div className={a.pinSteps}>
+        {['PIN', 'Confirm', 'Password'].map((l, i) => (
+          <span key={l} className={cx(a.pinStep, i === step && a.pinStepOn)}>
+            {l}
           </span>
         ))}
-        <input
-          ref={inputRef}
-          className="sr-only"
-          aria-label="6-digit code"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          autoFocus
-          value={code}
-          onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-        />
-      </label>
-      {verify.error && <div className={u.fieldError}>{(verify.error as Error).message}</div>}
-      <p className={a.terms} style={{ textAlign: 'left', marginTop: 16 }}>
-        Mock mode: use 123456.
-      </p>
-    </Screen>
-  )
-}
-
-/* ───────── 05 BVN / NIN ───────── */
-export function Kyc() {
-  const nav = useNavigate()
-  const setStage = useSession((x) => x.setStage)
-  const [method, setMethod] = useState<'BVN' | 'NIN'>('BVN')
-  const [num, setNum] = useState('')
-  const verify = useVerifyIdentity()
-  const ok = num.length === 11
-  return (
-    <Screen
-      header={
+      </div>
+      {step === 0 && (
         <>
-          <Header step="Step 2 of 2" />
-          <StepBars total={2} current={2} />
+          <PinInput key="p" value={pin} onChange={setPinValue} label="New PIN" error={weak} />
+          {weak && <div style={{ color: 'var(--flare)', fontSize: 14 }}>That PIN is too easy to guess. Pick another.</div>}
         </>
-      }
-      footer={
-        <Button
-          disabled={!ok}
-          loading={verify.isPending}
-          onClick={async () => {
-            await verify.mutateAsync({ method, number: num })
-            setStage('wallet')
-            nav('/auth/wallet-ready')
-          }}
-        >
-          Verify &amp; create wallet
-        </Button>
-      }
-    >
-      <Hero style={{ fontSize: 33, letterSpacing: -0.6, whiteSpace: 'nowrap' }}>Confirm it’s really you</Hero>
-      <Lead style={{ marginTop: 12 }}>Enter your BVN or NIN. It keeps fake accounts out of your circles.</Lead>
-      <Segmented
-        style={{ marginTop: 24 }}
-        options={[
-          { value: 'BVN', label: 'BVN' },
-          { value: 'NIN', label: 'NIN' },
-        ]}
-        value={method}
-        onChange={(m) => {
-          setMethod(m)
-          setNum('')
-        }}
-      />
-      <div style={{ marginTop: 24 }}>
-        <TextField
-          label={method === 'BVN' ? 'Bank Verification Number (11 digits)' : 'National Identification Number (11 digits)'}
-          inputMode="numeric"
-          placeholder="0000 0000 000"
-          value={groupDigits(num)}
-          onChange={(e) => setNum(e.target.value.replace(/\D/g, '').slice(0, 11))}
-          hint={num.length ? `${num.length}/11${ok ? ' ✓' : ''}` : undefined}
-          active={num.length > 0}
-          error={verify.error ? (verify.error as Error).message : undefined}
-        />
-      </div>
-      <Card style={{ marginTop: 26, padding: '18px 18px' }}>
-        <Stack gap={14}>
-          {['We only check your name and date of birth.', 'We never see your bank PIN or balance.', 'One person, one account. No duplicates.'].map((t) => (
-            <Row key={t} gap={12}>
-              <Icon name="check" size={16} stroke={2.2} color="var(--accent)" />
-              <span style={{ fontSize: 14.5 }}>{t}</span>
-            </Row>
-          ))}
-        </Stack>
-      </Card>
-    </Screen>
-  )
-}
-
-/* ───────── 06 Wallet ready ───────── */
-export function WalletReady() {
-  const nav = useNavigate()
-  const setStage = useSession((x) => x.setStage)
-  const { data: me } = useMe()
-  const toast = useToast()
-  const addr = me?.wallet.address ?? ''
-  return (
-    <Screen
-      hero="glow"
-      footer={
-        <Button
-          glow
-          onClick={() => {
-            setStage('autosave')
-            nav('/auth/auto-save')
-          }}
-        >
-          Set up auto-save
-        </Button>
-      }
-    >
-      <div className={a.walletStage}>
-        <motion.div className={a.walletBox} initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 200, damping: 18 }}>
-          <div className={a.walletLid}>
-            <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.35, type: 'spring', stiffness: 400, damping: 14 }} style={{ display: 'grid' }}>
-              <Icon name="check" size={28} stroke={2.6} color="#0E1013" />
-            </motion.span>
-          </div>
-        </motion.div>
-        <div className={a.walletShadow} />
-      </div>
-      <Eyebrow accent style={{ textAlign: 'center' }}>
-        Verified · Welcome, {me?.preferredName ?? '…'}
-      </Eyebrow>
-      <Hero style={{ textAlign: 'center', marginTop: 10, fontSize: 34 }}>Your wallet is ready</Hero>
-      <Lead style={{ textAlign: 'center', marginTop: 10, fontSize: 15 }}>This is your own USDT wallet. Savings and circle payouts land here.</Lead>
-      <Card style={{ marginTop: 28, padding: '18px 16px' }}>
-        <Row justify="space-between" align="flex-start">
-          <div>
-            <Eyebrow style={{ fontSize: 10 }}>Wallet address</Eyebrow>
-            <div className="mono" style={{ fontSize: 15, marginTop: 6 }}>
-              {addr ? shortAddress(addr, 10, 8) : '…'}
-            </div>
-          </div>
-          <button
-            className={u.iconBtn}
-            style={{ width: 40, height: 40, borderRadius: 12 }}
-            aria-label="Copy wallet address"
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(addr)
-              } catch {
-                /* clipboard blocked */
-              }
-              toast('Address copied')
-            }}
-          >
-            <Icon name="copy" size={18} />
-          </button>
-        </Row>
-        <div style={{ height: 1, background: 'var(--line)', margin: '16px 0' }} />
-        <Row>
-          <div style={{ flex: 1 }}>
-            <Eyebrow style={{ fontSize: 10 }}>Network</Eyebrow>
-            <Row gap={8} style={{ marginTop: 6 }}>
-              <span className={a.netDot} style={{ background: 'var(--chain)' }} />
-              <b style={{ fontWeight: 500 }}>{me?.wallet.network ?? 'Base'}</b>
-            </Row>
-          </div>
-          <div style={{ flex: 1 }}>
-            <Eyebrow style={{ fontSize: 10 }}>Asset</Eyebrow>
-            <Row gap={8} style={{ marginTop: 6 }}>
-              <span className={a.netDot} style={{ background: 'var(--success)' }} />
-              <b style={{ fontWeight: 500 }}>USDT</b>
-            </Row>
-          </div>
-        </Row>
-      </Card>
-    </Screen>
-  )
-}
-
-/* ───────── 07 Link bank & auto-save ───────── */
-const AMOUNTS = [1000000, 2000000, 5000000] as const
-const FREQS: { value: Frequency; label: string }[] = [
-  { value: 'daily', label: 'Daily' },
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'monthly', label: 'Monthly' },
-]
-const freqWord = { daily: 'every day', weekly: 'every', monthly: 'on the 1st of every month' }
-
-export function AutoSave() {
-  const nav = useNavigate()
-  const setStage = useSession((x) => x.setStage)
-  const { data: banks = [] } = useBanks()
-  const { data: rates } = useRates()
-  const resolve = useResolveAccount()
-  const create = useCreateMandate()
-  const [bankId, setBankId] = useState('gtbank')
-  const [acct, setAcct] = useState('')
-  const [amount, setAmount] = useState<number>(2000000)
-  const [freq, setFreq] = useState<Frequency>('weekly')
-  const bank = banks.find((b) => b.id === bankId)
-
-  useEffect(() => {
-    if (acct.length === 10) resolve.mutate({ bankId, accountNumber: acct })
-    else resolve.reset()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [acct, bankId])
-
-  const first = useMemo(() => firstDebitDate(freq, new Date(MOCK_TODAY)).toISOString(), [freq])
-  const each = rates ? ngnToUsdt(amount, rates.ngnPerUsdt) : 0
-  const summary = freq === 'weekly' ? `${ngn(amount)} every ${weekdayLong(first)} from ${bank?.name ?? ''}` : `${ngn(amount)} ${freqWord[freq]} from ${bank?.name ?? ''}`
-  const name = resolve.data?.accountName
-
-  return (
-    <Screen
-      header={<Header title="Set Up Auto-Save" right={<HeaderMono>1/1</HeaderMono>} />}
-      footer={
-        <Button
-          disabled={!name}
-          loading={create.isPending}
-          onClick={async () => {
-            await create.mutateAsync({ bankId, accountNumber: acct, amountNgnMinor: amount, frequency: freq })
-            setStage('ready')
-            nav('/home', { replace: true })
-          }}
-        >
-          Approve Mandate
-        </Button>
-      }
-    >
-      <Hero style={{ fontSize: 34 }}>Link your bank</Hero>
-      <Lead style={{ marginTop: 10, fontSize: 15 }}>We take your amount on each date and change it to USDT. Pause or stop any time.</Lead>
-
-      <Eyebrow style={{ marginTop: 26, marginBottom: 10 }}>Your bank</Eyebrow>
-      <div className={a.banks}>
-        {banks.map((b) => (
-          <button key={b.id} className={cx(u.card, a.bank, b.id === bankId && a.bankOn)} onClick={() => setBankId(b.id)} aria-pressed={b.id === bankId}>
-            <span className={a.bankLogo} style={{ background: b.color }}>
-              {b.code}
-            </span>
-            <span>{b.name}</span>
-          </button>
-        ))}
-      </div>
-
-      <Eyebrow style={{ marginTop: 22, marginBottom: 10 }}>Account number</Eyebrow>
-      <TextField
-        aria-label="Account number"
-        inputMode="numeric"
-        placeholder="0000 0000 00"
-        value={groupDigits(acct)}
-        onChange={(e) => setAcct(e.target.value.replace(/\D/g, '').slice(0, 10))}
-        hint={resolve.isPending ? 'Checking…' : name ? `✓ ${name}` : undefined}
-        active={acct.length > 0}
-        error={resolve.error ? (resolve.error as Error).message : undefined}
-      />
-
-      <Eyebrow style={{ marginTop: 22, marginBottom: 10 }}>How much each time</Eyebrow>
-      <Chips options={AMOUNTS.map((v) => ({ value: v, label: ngn(v, { compact: true }) }))} value={amount} onChange={setAmount} />
-
-      <Eyebrow style={{ marginTop: 22, marginBottom: 10 }}>How often</Eyebrow>
-      <Segmented options={FREQS} value={freq} onChange={setFreq} />
-
-      <div className={u.dashed} style={{ marginTop: 22, padding: '16px 18px' }}>
-        <div style={{ fontWeight: 500, fontSize: 15.5 }}>{summary}</div>
-        <div className={u.rowSub} style={{ marginTop: 4 }}>
-          ≈ {usdt(each)} USDT each time · first debit {dayMonthDay(first)}
+      )}
+      {step === 1 && (
+        <>
+          <PinInput key="c" value={confirm} onChange={setConfirm} label="Confirm PIN" />
+          {confirm.length === 0 && pin && <div style={{ color: 'var(--muted)', fontSize: 14 }}>Type the same 6 digits.</div>}
+        </>
+      )}
+      {step === 2 && (
+        <div className={a.fields}>
+          <TextField label="Password" type="password" sans autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} error={fe('password')} autoFocus />
         </div>
+      )}
+      {setPin.error && !fe('password') && <Notice tone="flare" icon="info" style={{ marginTop: 12 }}>{errorText(setPin.error)}</Notice>}
+    </AuthLayout>
+  )
+}
+
+/* ═════════ Forgot & reset password ═════════ */
+export function ForgotPassword() {
+  const nav = useNavigate()
+  const forgot = useForgotPassword()
+  const [email, setEmail] = useState('')
+  const submit = async () => {
+    if (!email.includes('@')) return
+    const ok = await forgot.mutateAsync(email.trim()).then(() => true, () => false)
+    if (ok) nav('/reset-password', { state: { email: email.trim() } })
+  }
+  return (
+    <AuthLayout
+      back="/login"
+      top={{ text: 'Remembered it?', label: 'Log in', to: '/login' }}
+      eyebrow="Reset password"
+      title="Forgot your password?"
+      lead="Enter your email and we’ll send a 6-digit reset code."
+      onSubmit={submit}
+      slide={2}
+      actions={
+        <Button type="submit" disabled={!email.includes('@')} loading={forgot.isPending}>
+          Send reset code
+        </Button>
+      }
+    >
+      <div className={a.fields}>
+        <TextField label="Email" type="email" sans autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoFocus />
+        {forgot.error && <Notice tone="flare" icon="info">{errorText(forgot.error)}</Notice>}
       </div>
-    </Screen>
+    </AuthLayout>
+  )
+}
+
+export function ResetPassword() {
+  const nav = useNavigate()
+  const toast = useToast()
+  const loc = useLocation()
+  const reset = useResetPassword()
+  const [email, setEmail] = useState((loc.state as { email?: string } | null)?.email ?? '')
+  const [code, setCode] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const fe = useFieldErrors(reset.error)
+  const strong = rules.every((r) => r.test(password))
+  const ready = email.includes('@') && code.length === 6 && strong && password === confirm
+
+  const submit = async () => {
+    if (!ready) return
+    const res = await reset.mutateAsync({ email: email.trim(), code, password, password_confirmation: confirm }).catch(() => null)
+    if (res) {
+      toast('Password changed. Log in with your new password.')
+      nav('/login', { replace: true })
+    }
+  }
+  return (
+    <AuthLayout
+      back="/forgot-password"
+      top={{ text: 'Remembered it?', label: 'Log in', to: '/login' }}
+      eyebrow="Reset password"
+      title="Set a new password"
+      lead="Enter the code from your email and choose a new password. For your safety, withdrawals pause for 24 hours after a reset."
+      onSubmit={submit}
+      slide={2}
+      actions={
+        <Button type="submit" disabled={!ready} loading={reset.isPending}>
+          Change password
+        </Button>
+      }
+    >
+      <div className={a.fields}>
+        <TextField label="Email" type="email" sans value={email} onChange={(e) => setEmail(e.target.value)} error={fe('email')} />
+        <div>
+          <div className={u.fieldLabel}>Reset code</div>
+          <PinInput value={code} onChange={setCode} reveal autoFocus={false} label="Reset code" />
+          {fe('code') && <div className={u.fieldError}>{fe('code')}</div>}
+        </div>
+        <div>
+          <TextField label="New password" type="password" sans autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} error={fe('password')} />
+          <div className={a.rules}>
+            {rules.map((r) => (
+              <span key={r.label} className={cx(r.test(password) && a.ruleOk)}>
+                <Icon name={r.test(password) ? 'check' : 'personal'} size={12} style={{ verticalAlign: -1, marginRight: 4 }} />
+                {r.label}
+              </span>
+            ))}
+          </div>
+        </div>
+        <TextField label="Confirm new password" type="password" sans autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} error={confirm && confirm !== password ? 'The passwords do not match.' : undefined} />
+        {formError(reset.error) && <Notice tone="flare" icon="info">{formError(reset.error)}</Notice>}
+      </div>
+    </AuthLayout>
   )
 }

@@ -847,3 +847,357 @@
     background-position: -200% 0;
   }
 }
+
+/* ═════════ Responsive: tablet (≥768) and desktop (≥1100) ═════════
+   On wider screens the app sits beside a side navigation. Screens stop filling the viewport like a
+   phone, content is centred in a readable column, and sticky phone footers become inline actions. */
+.narrow,
+.medium,
+.wide {
+  width: 100%;
+}
+@media (min-width: 768px) {
+  .screen {
+    min-height: 100dvh;
+    padding-top: 28px;
+    background: transparent;
+  }
+  .body,
+  .footer,
+  .header {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .narrow {
+    max-width: calc(600px + 2 * var(--gutter));
+  }
+  .medium {
+    max-width: calc(880px + 2 * var(--gutter));
+  }
+  .wide {
+    max-width: calc(1240px + 2 * var(--gutter));
+  }
+  .withTabs {
+    padding-bottom: 48px;
+  }
+  .footer {
+    position: static;
+    background: none;
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 28px var(--gutter) 48px;
+  }
+  .footer > .btn {
+    width: auto;
+    min-width: 220px;
+    padding: 0 32px;
+  }
+  .footer > p {
+    flex-basis: 100%;
+    order: 1;
+  }
+  .header {
+    grid-template-columns: auto 1fr auto;
+    margin: 0 auto 20px;
+    gap: 16px;
+  }
+  .header > div:first-child:empty {
+    display: none;
+  }
+  .headerTitle {
+    text-align: left;
+    font-family: var(--font-display);
+    font-size: 30px;
+    line-height: 36px;
+    letter-spacing: -0.3px;
+    font-weight: 400;
+  }
+  .headerStep {
+    text-align: left;
+  }
+  .heroGlow::before,
+  .heroSoft::before {
+    border-radius: 0 0 40px 40px;
+  }
+  .tabbar {
+    display: none;
+  }
+  .toast {
+    top: 24px;
+  }
+}
+
+/* ───────── Layout helpers ───────── */
+.columns {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 1100px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr) var(--aside, 380px);
+    gap: 28px;
+    align-items: start;
+  }
+  .columnsEven {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .stickyAside {
+    position: sticky;
+    top: 28px;
+  }
+}
+.grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--min, 280px)), 1fr));
+}
+@media (min-width: 768px) {
+  .grid {
+    gap: 16px;
+  }
+}
+.desktopOnly {
+  display: none;
+}
+@media (min-width: 768px) {
+  .desktopOnly {
+    display: revert;
+  }
+  .mobileOnly {
+    display: none !important;
+  }
+}
+
+/* ───────── Panels, notices, empty states ───────── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 20px;
+}
+:global([data-theme='dark']) .panel {
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+@media (min-width: 768px) {
+  .panel {
+    padding: 24px;
+  }
+}
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.panelTitle {
+  font-size: 16px;
+  font-weight: 600;
+}
+.notice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 20px;
+  background: var(--surface2);
+  color: var(--body);
+}
+.noticeFlare {
+  background: var(--flare-soft);
+  color: var(--flare);
+}
+.noticeSig {
+  background: var(--sig-tint);
+  color: var(--accent);
+}
+.noticeChain {
+  background: var(--chain-soft);
+  color: var(--chain);
+}
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 36px 20px;
+  color: var(--muted);
+  font-size: 14.5px;
+}
+.emptyTitle {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+}
+.soon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px dashed var(--line-strong);
+  color: var(--muted);
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.statLabel {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.statValue {
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 30px;
+  letter-spacing: -0.3px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.textBtn {
+  color: var(--accent);
+  font-size: 14.5px;
+  font-weight: 500;
+}
+.textBtn:hover {
+  text-decoration: underline;
+}
+.dangerBtn {
+  color: var(--flare);
+}
+
+/* ───────── Dialog / sheet ───────── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: var(--overlay);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.sheet {
+  width: 100%;
+  max-height: 92dvh;
+  overflow: auto;
+  background: var(--bg);
+  border-radius: 28px 28px 0 0;
+  padding: 10px var(--gutter) calc(var(--safe-bottom) + 16px);
+  box-shadow: 0 -20px 60px -20px var(--shadow);
+}
+.sheetGrip {
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--line-strong);
+  margin: 0 auto 16px;
+}
+.sheetHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+.sheetTitle {
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 30px;
+}
+@media (min-width: 768px) {
+  .overlay {
+    align-items: center;
+    padding: 24px;
+  }
+  .sheet {
+    max-width: 480px;
+    border-radius: 28px;
+    padding: 28px 32px 32px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+  }
+  :global([data-theme='dark']) .sheet {
+    background: var(--surface);
+  }
+  .sheetGrip {
+    display: none;
+  }
+}
+
+/* ───────── PIN boxes ───────── */
+.pinRow {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  margin: 20px 0 8px;
+}
+.pinBox {
+  height: 60px;
+  border-radius: 16px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 24px;
+  transition: border-color 0.15s;
+}
+:global([data-theme='dark']) .pinBox {
+  background: transparent;
+}
+.pinBoxOn {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sig) 35%, transparent);
+}
+.pinBoxErr {
+  border-color: var(--flare);
+}
+.pinHidden {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  font-size: 16px;
+}
+
+.headWrap {
+  margin: 0 auto;
+}
+.sheetFoot {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+@media (min-width: 768px) {
+  .sheetWide {
+    max-width: 640px;
+  }
+  .sheetFoot {
+    flex-direction: row-reverse;
+  }
+  .sheetFoot > .btn {
+    flex: 1;
+  }
+}

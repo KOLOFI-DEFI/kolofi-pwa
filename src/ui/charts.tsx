@@ -1,6 +1,31 @@
 import { motion } from 'framer-motion'
 import { useId, type CSSProperties, type ReactNode } from 'react'
-import type { CircleSpot } from '@/core/types'
+/** One seat on the circle ring. Build these from `Circle.seats` with `ringSpots()`. */
+export interface CircleSpot {
+  n: number
+  state: 'kolofi' | 'paid' | 'pot' | 'you' | 'member' | 'open'
+  label?: string
+}
+
+/** Seats → ring spots: house seats show as Kólófi, paid-out seats ticked, the current cycle's slot as the pot. */
+export function ringSpots(seats: { slot: number; type: string; is_me: boolean; status: string; member: string | null }[], currentCycle: number): CircleSpot[] {
+  return seats.map((s) => ({
+    n: s.slot,
+    state:
+      s.slot === currentCycle && currentCycle > 0
+        ? 'pot'
+        : s.is_me
+          ? 'you'
+          : s.status === 'paid_out' || s.status === 'completed'
+            ? 'paid'
+            : s.type === 'house'
+              ? 'kolofi'
+              : s.member === null
+                ? 'open'
+                : 'member',
+    label: s.is_me ? 'YOU' : undefined,
+  }))
+}
 import { Icon } from './Icon'
 
 /* ───────── Line chart (Home balance) ───────── */
@@ -115,6 +140,8 @@ const spotStyle = (state: CircleSpot['state']) => {
       return { background: 'var(--sig)', border: '0', color: 'var(--on-sig)', boxShadow: '0 0 0 8px color-mix(in srgb, var(--sig) 25%, transparent), 0 0 28px var(--glow)' }
     case 'you':
       return { background: 'var(--bg)', border: '2px solid var(--accent)', color: 'var(--accent)' }
+    case 'open':
+      return { background: 'transparent', border: '1.5px dashed var(--line-strong)', color: 'var(--faint)' }
     default:
       return { background: 'var(--surface2)', border: '1px solid var(--line-strong)', color: 'var(--muted)' }
   }

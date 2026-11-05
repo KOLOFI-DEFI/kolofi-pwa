@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { countdown, firstDebitDate, fullDate, groupDigits, groupPhone, ngn, ngnToUsdt, projectGoal, shortAddress, splitUsdt, usdt } from './format'
-import { createMockApi } from './api/mock'
+import { cents, money, parseAmount, percent, countdown, firstDebitDate, fullDate, groupDigits, groupPhone, ngn, ngnToUsdt, projectGoal, shortAddress, splitUsdt, usdt } from './format'
+import { createMockApi, MOCK_PASSWORD, MOCK_PIN } from './api/mock'
 
 describe('format', () => {
   it('formats USDT', () => {
@@ -35,17 +35,31 @@ describe('format', () => {
   })
 })
 
+describe('decimal money', () => {
+  it('formats API decimal strings', () => {
+    expect(cents('74.5')).toBe(7450)
+    expect(money('1250.5')).toBe('1,250.50')
+    expect(parseAmount('1,250.50')).toBe('1250.50')
+    expect(parseAmount('0')).toBeNull()
+    expect(parseAmount('12.1234567')).toBeNull()
+    expect(percent('12.50')).toBe('12.5%')
+  })
+})
+
 describe('mock api', () => {
   const api = createMockApi({ latency: 0 })
-  it('serves the design balance', async () => {
-    const b = await api.wallet.balance()
-    expect(b.totalMinor).toBe(238260)
+  it('logs in with the mock password and rejects a wrong one', async () => {
+    await expect(api.auth.login({ email: 'ada@example.com', password: 'nope' })).rejects.toThrow()
+    const res = await api.auth.login({ email: 'ada@example.com', password: MOCK_PASSWORD })
+    expect(res.user.has_transaction_pin).toBe(true)
   })
-  it('rejects a short BVN', async () => {
-    await expect(api.auth.verifyIdentity({ method: 'BVN', number: '123' })).rejects.toThrow()
+  it('needs the right PIN to withdraw, and takes the fee', async () => {
+    await expect(api.withdrawals.create({ asset: 'usdt', network: 'trc20', address: 'TLa2f6VPqDgRE67v1736s7bJ8Ray5wYjU7', amount: '20', pin: '000000' })).rejects.toThrow()
+    const w = await api.withdrawals.create({ asset: 'usdt', network: 'trc20', address: 'TLa2f6VPqDgRE67v1736s7bJ8Ray5wYjU7', amount: '20', pin: MOCK_PIN })
+    expect(w.total).toBe('21')
   })
   it('marks notifications read', async () => {
     await api.notifications.markAllRead()
-    expect((await api.notifications.list()).every((n) => n.read)).toBe(true)
+    expect(await api.notifications.unreadCount()).toBe(0)
   })
 })

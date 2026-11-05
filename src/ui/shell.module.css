@@ -1,0 +1,308 @@
+/* Phones: no side navigation; pages fill the screen and the tab bar floats at the bottom. */
+.side {
+  display: none;
+}
+.main {
+  min-width: 0;
+}
+
+/* Tablet: icon rail. */
+@media (min-width: 768px) {
+  .shell {
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr);
+    min-height: 100dvh;
+  }
+  .side {
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 22px 14px 18px;
+    border-right: 1px solid var(--line);
+    background: var(--surface);
+    z-index: 30;
+  }
+  :global([data-theme='dark']) .side {
+    background: color-mix(in srgb, var(--surface) 55%, var(--bg));
+  }
+  .main {
+    background:
+      radial-gradient(900px 420px at 85% -120px, color-mix(in srgb, var(--sig) 16%, transparent), transparent 70%),
+      var(--bg);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+    margin-bottom: 18px;
+  }
+  .logo {
+    display: none;
+    height: 26px;
+  }
+  .mark {
+    width: 34px;
+    height: 34px;
+  }
+  .itemLabel,
+  .count,
+  .meText,
+  .logout {
+    display: none;
+  }
+  .cta {
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: var(--sig);
+    color: var(--on-sig);
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 14px;
+    box-shadow: 0 10px 26px -10px var(--glow);
+    transition: transform 0.15s var(--ease);
+  }
+  .cta:hover {
+    transform: translateY(-1px);
+  }
+  .group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .item {
+    position: relative;
+    height: 46px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 15px;
+    font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+  }
+  .item:hover {
+    background: var(--surface2);
+    color: var(--text);
+  }
+  .itemOn,
+  .itemOn:hover {
+    background: var(--sig-tint);
+    color: var(--text);
+  }
+  :global([data-theme='dark']) .itemOn {
+    background: var(--sig-tint);
+    color: var(--sig);
+  }
+  .itemIcon {
+    position: relative;
+    display: grid;
+    place-items: center;
+  }
+  .badgeDot {
+    position: absolute;
+    top: -2px;
+    right: -3px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--flare);
+    box-shadow: 0 0 0 2px var(--surface);
+  }
+  .sep {
+    height: 1px;
+    background: var(--line);
+    margin: 12px 6px;
+  }
+  .bottom {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+  }
+  .install {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    height: 46px;
+    border-radius: 14px;
+    border: 1px dashed var(--line-strong);
+    color: var(--text);
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .install:hover {
+    border-color: var(--accent);
+    background: var(--sig-tint);
+  }
+  .installText {
+    display: none;
+  }
+  .theme {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 14px;
+    background: var(--surface2);
+  }
+  .themeBtn {
+    width: 36px;
+    height: 32px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    color: var(--muted);
+  }
+  .themeOn {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 2px 6px -2px var(--shadow);
+  }
+  .me {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--sig);
+    color: var(--on-sig);
+    font-weight: 600;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+}
+
+/* Desktop: full side navigation. */
+@media (min-width: 1100px) {
+  .shell {
+    grid-template-columns: 264px minmax(0, 1fr);
+  }
+  .side {
+    padding: 26px 18px 20px;
+  }
+  .brand {
+    justify-content: flex-start;
+    padding: 0 10px;
+    margin-bottom: 26px;
+  }
+  .logo {
+    display: block;
+  }
+  .mark {
+    display: none;
+  }
+  .itemLabel {
+    display: inline;
+  }
+  .meText {
+    display: flex;
+  }
+  .count,
+  .logout {
+    display: grid;
+  }
+  .cta {
+    justify-content: flex-start;
+    padding: 0 18px;
+  }
+  .item {
+    justify-content: flex-start;
+    padding: 0 14px;
+  }
+  .badgeDot {
+    display: none;
+  }
+  .count {
+    margin-left: auto;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 7px;
+    border-radius: 11px;
+    place-items: center;
+    background: var(--flare);
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+  .bottom {
+    align-items: stretch;
+  }
+  .install {
+    height: auto;
+    justify-content: flex-start;
+    padding: 12px 14px;
+    text-align: left;
+  }
+  .installText {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .installTitle {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .installSub {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .theme {
+    flex-direction: row;
+  }
+  .themeBtn {
+    flex: 1;
+  }
+  .me {
+    padding: 10px;
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+  }
+  .meText {
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+  }
+  .meName {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .meMail {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .logout {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    place-items: center;
+    color: var(--muted);
+  }
+  .logout:hover {
+    background: var(--surface2);
+    color: var(--flare);
+  }
+}

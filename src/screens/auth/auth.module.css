@@ -1,3 +1,78 @@
+/* ═══ Auth layout ═══
+   Phones: one full-screen column (boards 01–06): back button, serif title, fields, sticky actions.
+   Desktop (≥960): split screen. Left: always-dark brand panel with the rotating product story.
+   Right: the form, vertically centred in a 440px column, with a top bar for the other auth route. */
+.page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+.brand {
+  display: none;
+}
+.formSide {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--safe-top);
+}
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  margin: 8px 0 12px;
+  padding: 0 var(--gutter);
+}
+.topLogo {
+  display: none;
+}
+.topLink {
+  display: none;
+}
+.formWrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--gutter);
+}
+.form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 28px;
+}
+.row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.actions {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: auto;
+  padding: 20px 0 calc(var(--safe-bottom) + 12px);
+  background: linear-gradient(180deg, transparent, var(--bg) 22px);
+}
+.switch {
+  text-align: center;
+  font-size: 14px;
+  color: var(--body);
+}
+.switch a,
+.switch button {
+  color: var(--text);
+  font-weight: 600;
+}
 .terms {
   text-align: center;
   font-size: 12.5px;
@@ -6,6 +81,7 @@
 .cc {
   padding: 0 16px;
   gap: 10px;
+  flex-shrink: 0;
 }
 .ccText {
   font-size: 16px;
@@ -25,86 +101,283 @@
 .flag i:nth-child(2) {
   background: #fff;
 }
-.otp {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 8px;
-  margin-top: 28px;
-  cursor: text;
-}
-.otpBox {
-  height: 60px;
-  padding: 0;
-  justify-content: center;
-  font-family: var(--font-mono);
-  font-size: 24px;
-}
-.walletStage {
-  position: relative;
-  height: 330px;
-  display: grid;
-  place-items: center;
-}
-.walletBox {
-  width: 130px;
-  height: 134px;
-  border-radius: 18px;
-  overflow: hidden;
-  background: linear-gradient(180deg, #23272b, #0d0f12 70%);
-  box-shadow: 0 30px 50px -20px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(198, 243, 94, 0.5), 0 0 60px -10px var(--glow);
-}
-.walletLid {
-  height: 66px;
-  display: grid;
-  place-items: center;
-  border-radius: 18px 18px 0 0;
-  background: linear-gradient(160deg, #e2ff8a 0%, #c6f35e 55%, #a9da3a 100%);
-}
-.walletShadow {
-  position: absolute;
-  bottom: 36px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 180px;
-  height: 22px;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 45%, transparent), transparent);
-}
-:global([data-theme='dark']) .walletShadow {
-  background: radial-gradient(closest-side, rgba(198, 243, 94, 0.5), transparent);
-}
-.netDot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-.banks {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-}
-.bank {
-  height: 84px;
-  border-radius: 14px;
+.rules {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 8px;
   font-size: 12.5px;
-  transition: border-color 0.2s;
+  color: var(--muted);
 }
-.bankOn,
-:global([data-theme='dark']) .bankOn {
-  border: 1.5px solid var(--accent);
+.ruleOk {
+  color: var(--accent);
 }
-.bankLogo {
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
+.forgot {
+  align-self: flex-end;
+  font-size: 14px;
+  color: var(--accent);
+  font-weight: 500;
+}
+.resend {
+  font-size: 14px;
+  color: var(--body);
+  margin-top: 18px;
+}
+.resend button {
+  color: var(--accent);
+  font-weight: 600;
+}
+.resend button:disabled {
+  color: var(--muted);
+  font-weight: 500;
+  cursor: default;
+}
+.pinSteps {
+  display: flex;
+  gap: 8px;
+  margin-top: 22px;
+}
+.pinStep {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+}
+.pinStepOn {
+  background: var(--sig);
+  border-color: var(--sig);
+  color: var(--on-sig);
+}
+
+/* Welcome (phone): the three intro boards as a story. */
+.welcomeTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px var(--gutter) 0;
+}
+.welcomeStage {
+  position: relative;
+  flex: 1;
+  min-height: 380px;
   display: grid;
   place-items: center;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
+}
+.welcomeCopy {
+  padding: 0 var(--gutter);
+}
+.welcomeChoices {
+  display: none;
+}
+.desktopWelcome {
+  display: none !important;
+}
+.welcomeSide {
+  background:
+    radial-gradient(120% 60% at 50% 0%, color-mix(in srgb, var(--bg-hero) 85%, transparent) 0%, transparent 70%),
+    var(--bg);
+}
+
+@media (min-width: 960px) {
+  .page {
+    display: grid;
+    grid-template-columns: minmax(440px, 1fr) minmax(520px, 1fr);
+  }
+  .brand {
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    padding: 36px 52px 40px;
+    overflow: hidden;
+    color: #eceae4;
+    background:
+      radial-gradient(700px 520px at 50% 34%, rgba(198, 243, 94, 0.18), transparent 70%),
+      radial-gradient(500px 360px at 0% 100%, rgba(58, 114, 222, 0.16), transparent 70%),
+      #0b0d10;
+    isolation: isolate;
+    /* The brand panel is always dark, whatever the app theme. */
+    --accent: #c6f35e;
+    --text: #eceae4;
+    --body: #b4b8be;
+    --muted: #9aa0a8;
+    --surface: #101318;
+    --surface2: #161a20;
+    --line: #20242a;
+    --line-strong: #2a2e35;
+    --chain: #7fb7ff;
+    --chain-soft: #131d2b;
+    --bg: #0b0d10;
+  }
+  .brand::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(70% 60% at 50% 40%, #000 30%, transparent 75%);
+  }
+  .brandLogo {
+    height: 28px;
+    width: auto;
+    align-self: flex-start;
+  }
+  .brandArt {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    min-height: 0;
+  }
+  .brandCopy {
+    max-width: 500px;
+    min-height: 250px;
+  }
+  .brandTitle {
+    font-family: var(--font-display);
+    font-size: clamp(38px, 3.4vw, 52px);
+    line-height: 1.04;
+    letter-spacing: -0.6px;
+    margin-top: 14px;
+  }
+  .brandLead {
+    font-size: 16px;
+    line-height: 25px;
+    color: #b4b8be;
+    margin-top: 16px;
+  }
+  .brandFoot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 28px;
+  }
+  .brandDots {
+    display: flex;
+    gap: 6px;
+  }
+  .brandDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 4px;
+    background: #2a2e35;
+    transition: width 0.3s var(--ease), background 0.3s;
+  }
+  .brandDotOn {
+    width: 28px;
+    background: #c6f35e;
+  }
+  .brandSafe {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #8c9198;
+  }
+  .formSide {
+    padding: 0;
+    min-height: 100dvh;
+  }
+  .topbar {
+    margin: 0;
+    padding: 28px 48px;
+    min-height: 0;
+  }
+  .topLink {
+    display: block;
+    margin-left: auto;
+    white-space: nowrap;
+    font-size: 14.5px;
+    color: var(--body);
+  }
+  .topLink a {
+    display: inline-block;
+    color: var(--text);
+    font-weight: 600;
+    margin-left: 10px;
+    padding: 9px 18px;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    transition: background 0.15s;
+  }
+  .topLink a:hover {
+    background: var(--surface2);
+  }
+  .formWrap {
+    justify-content: center;
+    padding: 0 48px 72px;
+  }
+  .form {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto;
+  }
+  .actions {
+    position: static;
+    background: none;
+    padding: 28px 0 0;
+    margin-top: 0;
+  }
+  .phoneOnly {
+    display: none !important;
+  }
+  .desktopWelcome {
+    display: flex !important;
+  }
+  .welcomeSide {
+    background: var(--bg);
+  }
+  .welcomeChoices {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 32px;
+  }
+  .choice {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 20px;
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    text-align: left;
+    transition: border-color 0.15s, transform 0.15s var(--ease);
+  }
+  .choice:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+  .choiceTitle {
+    font-weight: 600;
+    font-size: 15.5px;
+  }
+  .choiceSub {
+    font-size: 13.5px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+}
+
+.row2 > * {
+  min-width: 0;
+}
+.row2 input {
+  min-width: 0;
+  width: 100%;
+}
+.topbar > header {
+  padding: 0;
+  margin: 0;
 }

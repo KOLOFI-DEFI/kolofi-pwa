@@ -1,11 +1,13 @@
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import {
   createContext, useCallback, useContext, useEffect, useId, useRef, useState,
   type ButtonHTMLAttributes, type CSSProperties, type InputHTMLAttributes, type ReactNode,
 } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router'
 import { avatarColors } from '@/core/tokens'
-import { splitUsdt } from '@/core/format'
+import { cents, splitUsdt } from '@/core/format'
+import { ApiError } from '@/core/api/contract'
 import type { IconName } from '@/core/icons'
 import { Icon } from './Icon'
 import s from './ui.module.css'
@@ -14,6 +16,7 @@ export { Icon }
 export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ')
 
 /* ───────── Screen & layout ───────── */
+type Width = 'narrow' | 'medium' | 'wide'
 interface ScreenProps {
   children: ReactNode
   footer?: ReactNode
@@ -22,18 +25,54 @@ interface ScreenProps {
   header?: ReactNode
   bodyClassName?: string
   bodyStyle?: CSSProperties
+  /** Content width on tablet and desktop. Desktop screens lay out their own grids inside it. Phones are always full width. */
+  width?: Width
 }
-export function Screen({ children, footer, hero, tabs, header, bodyClassName, bodyStyle }: ScreenProps) {
+export function Screen({ children, footer, hero, tabs, header, bodyClassName, bodyStyle, width = 'wide' }: ScreenProps) {
+  const w = s[width]
   return (
     <div className={cx(s.screen, hero === 'glow' && s.heroGlow, hero === 'soft' && s.heroSoft)}>
-      {header}
-      <main className={cx(s.body, tabs && s.withTabs, bodyClassName)} style={bodyStyle}>
+      {header && <div className={cx(s.headWrap, w)}>{header}</div>}
+      <main className={cx(s.body, w, tabs && s.withTabs, bodyClassName)} style={bodyStyle}>
         {children}
       </main>
-      {footer && <div className={s.footer}>{footer}</div>}
+      {footer && <div className={cx(s.footer, w)}>{footer}</div>}
     </div>
   )
 }
+
+/** Main column plus a side column on desktop; stacks on phones and tablets. */
+export function Columns({ children, aside, asideWidth, even, sticky, style }: { children: ReactNode; aside?: ReactNode; asideWidth?: number; even?: boolean; sticky?: boolean; style?: CSSProperties }) {
+  return (
+    <div className={cx(s.columns, even && s.columnsEven)} style={{ ...(asideWidth ? ({ '--aside': `${asideWidth}px` } as CSSProperties) : {}), ...style }}>
+      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>{children}</div>
+      {aside && <aside className={cx(sticky && s.stickyAside)} style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>{aside}</aside>}
+    </div>
+  )
+}
+/** Responsive card grid: as many columns of at least `min` px as fit. */
+export const Grid = ({ children, min = 280, style }: { children: ReactNode; min?: number; style?: CSSProperties }) => (
+  <div className={s.grid} style={{ '--min': `${min}px`, ...style } as CSSProperties}>
+    {children}
+  </div>
+)
+export const DesktopOnly = ({ children, style }: { children: ReactNode; style?: CSSProperties }) => <div className={s.desktopOnly} style={style}>{children}</div>
+export const MobileOnly = ({ children, style }: { children: ReactNode; style?: CSSProperties }) => <div className={s.mobileOnly} style={style}>{children}</div>
+
+/** True on tablet and desktop widths (≥768px). Use for structure that cannot be done in CSS alone. */
+export function useIsDesktop(min = 768) {
+  const query = `(min-width: ${min}px)`
+  const [match, setMatch] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches)
+  useEffect(() => {
+    const m = window.matchMedia(query)
+    const on = () => setMatch(m.matches)
+    on()
+    m.addEventListener('change', on)
+    return () => m.removeEventListener('change', on)
+  }, [query])
+  return match
+}
+
 export const Spacer = ({ h }: { h?: number }) => (h ? <div style={{ height: h, flexShrink: 0 }} /> : <div className={s.spacer} />)
 
 export function Stack({ gap = 12, children, style, className }: { gap?: number; children: ReactNode; style?: CSSProperties; className?: string }) {
@@ -414,3 +453,198 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 }
 
 export { s as uiStyles }
+
+/* ───────── Panels & feedback ───────── */
+export function Panel({ title, action, children, style, className }: { title?: ReactNode; action?: ReactNode; children: ReactNode; style?: CSSProperties; className?: string }) {
+  return (
+    <section className={cx(s.panel, className)} style={style}>
+      {(title || action) && (
+        <div className={s.panelHead}>
+          {title && <h2 className={s.panelTitle}>{title}</h2>}
+          {action}
+        </div>
+      )}
+      {children}
+    </section>
+  )
+}
+export function Notice({ children, tone = 'neutral', icon, style }: { children: ReactNode; tone?: 'neutral' | 'flare' | 'sig' | 'chain'; icon?: IconName; style?: CSSProperties }) {
+  const t = { neutral: '', flare: s.noticeFlare, sig: s.noticeSig, chain: s.noticeChain }[tone]
+  return (
+    <div className={cx(s.notice, t)} style={style} role={tone === 'flare' ? 'alert' : undefined}>
+      {icon && <Icon name={icon} size={18} style={{ flexShrink: 0, marginTop: 1 }} />}
+      <div style={{ minWidth: 0 }}>{children}</div>
+    </div>
+  )
+}
+export function EmptyState({ icon = 'circles', title, children, action }: { icon?: IconName; title: ReactNode; children?: ReactNode; action?: ReactNode }) {
+  return (
+    <div className={s.empty}>
+      <Tile size={52} radius={16}>
+        <Icon name={icon} size={22} />
+      </Tile>
+      <div className={s.emptyTitle}>{title}</div>
+      {children && <div style={{ maxWidth: 360 }}>{children}</div>}
+      {action && <div style={{ marginTop: 6 }}>{action}</div>}
+    </div>
+  )
+}
+export const Soon = ({ children = 'Coming soon' }: { children?: ReactNode }) => <span className={s.soon}>{children}</span>
+export const Stat = ({ label, value, sub, style }: { label: ReactNode; value: ReactNode; sub?: ReactNode; style?: CSSProperties }) => (
+  <div className={s.stat} style={style}>
+    <span className={s.statLabel}>{label}</span>
+    <span className={s.statValue}>{value}</span>
+    {sub && <span style={{ fontSize: 13, color: 'var(--muted)' }}>{sub}</span>}
+  </div>
+)
+export const TextButton = ({ children, onClick, danger, style }: { children: ReactNode; onClick?: () => void; danger?: boolean; style?: CSSProperties }) => (
+  <button type="button" className={cx(s.textBtn, danger && s.dangerBtn)} onClick={onClick} style={style}>
+    {children}
+  </button>
+)
+
+/** Serif amount from an API decimal string: <Money value="74.5" ccy="USDT" /> */
+export const Money = ({ value, ...rest }: { value: string | null | undefined } & Omit<Parameters<typeof Amount>[0], 'minor'>) => <Amount minor={cents(value)} {...rest} />
+
+/** A readable message for any thrown error. */
+export function errorText(e: unknown): string {
+  if (e instanceof ApiError) return e.message
+  if (e instanceof Error) return e.message
+  return 'Something went wrong. Please try again.'
+}
+
+/* ───────── Dialog ───────── */
+export function Modal({ open, onClose, title, sub, children, footer, wide }: { open: boolean; onClose: () => void; title: ReactNode; sub?: ReactNode; children?: ReactNode; footer?: ReactNode; wide?: boolean }) {
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prev
+    }
+  }, [open, onClose])
+  // Rendered into <body> so it sits above the tab bar and side navigation, whatever screen opens it.
+  if (typeof document === 'undefined') return null
+  return createPortal(
+    <AnimatePresence>
+      {open && (
+        <motion.div className={s.overlay} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            className={cx(s.sheet, wide && s.sheetWide)}
+            initial={{ y: 40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 40, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 38 }}
+          >
+            <div className={s.sheetGrip} />
+            <div className={s.sheetHead}>
+              <div>
+                <h2 className={s.sheetTitle}>{title}</h2>
+                {sub && <p style={{ color: 'var(--body)', marginTop: 6, fontSize: 14.5, lineHeight: '21px' }}>{sub}</p>}
+              </div>
+              <IconButton icon="close" label="Close" onClick={onClose} />
+            </div>
+            {children}
+            {footer && <div className={s.sheetFoot}>{footer}</div>}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body,
+  )
+}
+
+/* ───────── PIN ───────── */
+export function PinInput({ value, onChange, error, autoFocus = true, label = 'Transaction PIN', reveal }: { value: string; onChange: (v: string) => void; error?: boolean; autoFocus?: boolean; label?: string; reveal?: boolean }) {
+  const [focused, setFocused] = useState(false)
+  return (
+    <div className={s.pinRow}>
+      {Array.from({ length: 6 }, (_, i) => (
+        <div key={i} className={cx(s.pinBox, focused && i === Math.min(value.length, 5) && s.pinBoxOn, error && s.pinBoxErr)} aria-hidden>
+          {value[i] ? (reveal ? value[i] : '•') : ''}
+        </div>
+      ))}
+      <input
+        className={s.pinHidden}
+        aria-label={label}
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        maxLength={6}
+        autoFocus={autoFocus}
+        value={value}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 6))}
+      />
+    </div>
+  )
+}
+
+interface PinRequest {
+  title: string
+  sub?: ReactNode
+  confirmLabel?: string
+  run: (pin: string) => Promise<unknown>
+}
+const PinCtx = createContext<(req: PinRequest) => void>(() => {})
+/** Ask for the transaction PIN, run the money move with it, and keep the dialog open on errors. */
+export const usePin = () => useContext(PinCtx)
+export function PinProvider({ children }: { children: ReactNode }) {
+  const [req, setReq] = useState<PinRequest | null>(null)
+  const [pin, setPin] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const ask = useCallback((r: PinRequest) => {
+    setPin('')
+    setError(null)
+    setReq(r)
+  }, [])
+  const close = useCallback(() => {
+    if (!busy) setReq(null)
+  }, [busy])
+  const submit = async () => {
+    if (!req || pin.length !== 6) return
+    setBusy(true)
+    setError(null)
+    try {
+      await req.run(pin)
+      setReq(null)
+    } catch (e) {
+      setError(errorText(e))
+      setPin('')
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <PinCtx.Provider value={ask}>
+      {children}
+      <Modal
+        open={!!req}
+        onClose={close}
+        title={req?.title ?? ''}
+        sub={req?.sub ?? 'Enter your 6-digit transaction PIN to confirm.'}
+        footer={
+          <Button disabled={pin.length !== 6} loading={busy} onClick={submit}>
+            {req?.confirmLabel ?? 'Confirm'}
+          </Button>
+        }
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            void submit()
+          }}
+        >
+          <PinInput value={pin} onChange={setPin} error={!!error} />
+        </form>
+        {error && <div style={{ color: 'var(--flare)', fontSize: 14, marginTop: 6 }}>{error}</div>}
+      </Modal>
+    </PinCtx.Provider>
+  )
+}

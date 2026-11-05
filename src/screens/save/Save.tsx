@@ -1,349 +1,188 @@
-import { motion } from 'framer-motion'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
-import { MOCK_TODAY } from '@/core/api'
-import { firstDebitDate, fullDate, monthDay, monthYear, ngn, ngnToUsdt, projectGoal, shortAddress, usdt, usdtToNgn, weekdayLong } from '@/core/format'
-import type { Frequency, PotType, TxKind } from '@/core/types'
-import {
-  useAccounts, useCreateGoal, useGoals, useLock, useLocked, useLockOptions, useMandate, useRates, useRecent, useSaveSummary, useToggleMandate,
-} from '@/core/data'
-import {
-  Amount, Button, Card, Chips, Eyebrow, FieldLabel, H1, Header, Icon, List, ListRow, Progress, Row, Screen, SectionTitle,
-  Segmented, Skeleton, Stack, TextField, Tile, Toggle, useToast, uiStyles as u, cx,
-} from '@/ui'
-import { BarChart } from '@/ui/charts'
+import { fullDate, money, percent } from '@/core/format'
+import { usePlans, useSavingsRates, useSavingsSummary } from '@/core/data'
+import type { SavingsPlan, SavingsProduct } from '@/core/types'
+import { Button, EmptyState, Eyebrow, Icon, Money, Screen, Skeleton, Tile, cx } from '@/ui'
+import { PlanCard, lockLabel, rateTypeLabel } from './shared'
 import v from './save.module.css'
 
-const FREQS: { value: Frequency; label: string }[] = [
-  { value: 'daily', label: 'Daily' },
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'monthly', label: 'Monthly' },
-]
-const txTile: Record<TxKind, { g: string; tone: 'neutral' | 'sig' | 'chain' | 'flare' }> = {
-  interest: { g: '%', tone: 'sig' },
-  autosave: { g: '↓', tone: 'sig' },
-  deposit: { g: '+', tone: 'neutral' },
-  withdraw: { g: '↗', tone: 'neutral' },
-  pot: { g: '◎', tone: 'sig' },
-  contribution: { g: '↑', tone: 'neutral' },
-}
+export { NewPlan } from './NewPlan'
+export { PlanDetail } from './PlanDetail'
 
-/* ───────── 11 Save ───────── */
+/* ───────── 11 Save ─────────
+   Phone: title + New plan, one summary card, plans stacked, current rates as tiles.
+   Desktop: page header with actions, four stat cards, plans as a card grid beside a rates panel. */
 export function Save() {
   const nav = useNavigate()
-  const { data: sum } = useSaveSummary()
-  const { data: mandate } = useMandate()
-  const { data: goals } = useGoals()
-  const { data: locked } = useLocked()
-  const { data: recent } = useRecent()
-  const { data: accounts } = useAccounts()
-  const depositAcc = accounts?.find((a) => a.kind === 'deposit')
-  const toggle = useToggleMandate()
-  const lock = locked?.[0]
+  const { data: summary } = useSavingsSummary()
+  const { data: rates } = useSavingsRates()
+  const { data: plans } = usePlans()
+  const [showPast, setShowPast] = useState(false)
+
+  const active = (plans ?? []).filter((p) => p.status === 'active')
+  const past = (plans ?? []).filter((p) => p.status !== 'active')
+  const topRate = rates?.products.reduce((best, p) => Math.max(best, parseFloat(p.annual_rate_percent)), 0)
 
   return (
-    <Screen tabs>
-      <Row justify="space-between" style={{ marginTop: 14 }}>
-        <H1>Save</H1>
-        <Button variant="outline" icon="plus" onClick={() => nav('/save/new-goal')}>
-          New goal
+    <Screen tabs width="wide">
+      <header className={v.pageHead}>
+        <div className={v.pageHeadText}>
+          <h1 className={v.pageTitle}>Save</h1>
+          <p className={v.pageSub}>Earn interest every day on goals and locked plans{topRate ? `, up to ${topRate}% a year` : ''}.</p>
+        </div>
+        <Button variant="outline" icon="plus" className={v.headBtnPhone} onClick={() => nav('/save/new')}>
+          New plan
         </Button>
-      </Row>
-
-      <Card style={{ marginTop: 22, padding: '20px 20px 18px', borderRadius: 24 }}>
-        {sum ? (
-          <>
-            <Row justify="space-between" align="flex-start">
-              <div>
-                <Eyebrow style={{ fontSize: 10.5 }}>Total saved</Eyebrow>
-                <div style={{ marginTop: 6 }}>
-                  <Amount minor={sum.totalMinor} size={44} ccy="USDT" />
-                </div>
-                <div style={{ fontSize: 14, color: 'var(--body)', marginTop: 4 }}>≈ {ngn(sum.ngnMinor)}</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <Eyebrow style={{ fontSize: 10.5 }}>Interest</Eyebrow>
-                <div className="mono" style={{ color: 'var(--accent)', fontSize: 17, marginTop: 8 }}>
-                  {usdt(sum.interestMinor, { sign: true })}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{sum.apyLabel}</div>
-              </div>
-            </Row>
-            <div style={{ marginTop: 26 }}>
-              <BarChart values={sum.monthly.map((m) => m.value)} labels={[sum.monthly[0]!.label, sum.monthly[6]!.label, sum.monthly[11]!.label].map((l) => l.toUpperCase()) as [string, string, string]} />
-            </div>
-          </>
-        ) : (
-          <Skeleton h={190} />
-        )}
-      </Card>
-
-      {mandate && (
-        <div className={cx(v.banner, !mandate.active && v.bannerOff)}>
-          <div className={v.bannerTile}>₦</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 600, fontSize: 15.5 }}>
-              {ngn(mandate.amountNgnMinor)} every {mandate.frequency === 'weekly' ? weekdayLong(mandate.nextDebit) : mandate.frequency === 'daily' ? 'day' : 'month'}
-            </div>
-            <div style={{ fontSize: 13, marginTop: 2, opacity: 0.8 }}>
-              From {mandate.bankName} ••{mandate.accountLast4} · {mandate.active ? `next ${monthDay(mandate.nextDebit)}` : 'paused'}
-            </div>
-          </div>
-          <Toggle ink on={mandate.active} onChange={(on) => toggle.mutate(on)} label="Auto-save" />
-        </div>
-      )}
-
-      <SectionTitle>Your pots</SectionTitle>
-      <Stack gap={10}>
-        {(goals ?? []).map((g) => (
-          <Card key={g.id} style={{ padding: '16px 16px 18px' }}>
-            <Row>
-              <Tile tone="sig" size={40}>
-                <Icon name="target" size={18} />
-              </Tile>
-              <div style={{ flex: 1 }}>
-                <div className={u.rowTitle}>{g.name}</div>
-                <div className={u.rowSub}>
-                  {g.type === 'flexible' ? 'Savings' : 'Locked'} · by {monthYear(g.by)}
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div className="mono" style={{ fontSize: 16 }}>{usdt(g.savedMinor)}</div>
-                <div style={{ fontSize: 12, color: 'var(--muted)' }}>of {usdt(g.targetMinor, { decimals: 0 })}</div>
-              </div>
-            </Row>
-            <Progress value={g.savedMinor / g.targetMinor} style={{ marginTop: 16 }} />
-          </Card>
-        ))}
-        <div className={v.twoUp}>
-          {lock && (
-            <Card onClick={() => nav('/save/locked')} style={{ padding: 16 }}>
-              <Row justify="space-between" align="flex-start">
-                <Tile tone="chain" size={36} radius={10}>
-                  <Icon name="lock" size={16} />
-                </Tile>
-                <span className="mono" style={{ fontSize: 10, letterSpacing: 1, color: 'var(--accent)' }}>HIGHEST</span>
-              </Row>
-              <div className={u.rowTitle} style={{ marginTop: 14 }}>
-                Locked · {lock.months} mo
-              </div>
-              <div className={u.rowSub}>Opens {monthDay(lock.opensAt)}</div>
-              <div className="mono" style={{ fontSize: 16, marginTop: 14 }}>{usdt(lock.amountMinor)}</div>
-            </Card>
-          )}
-          <Card onClick={() => nav('/money/withdraw')} style={{ padding: 16 }}>
-            <Row justify="space-between" align="flex-start">
-              <Tile size={36} radius={10}>$</Tile>
-              <span className="mono" style={{ fontSize: 10, letterSpacing: 1, color: 'var(--muted)' }}>NO FEE</span>
-            </Row>
-            <div className={u.rowTitle} style={{ marginTop: 14 }}>Deposit</div>
-            <div className={u.rowSub}>Take out any time</div>
-            <div className="mono" style={{ fontSize: 16, marginTop: 14 }}>{depositAcc ? usdt(depositAcc.balanceMinor) : '—'}</div>
-          </Card>
-        </div>
-      </Stack>
-
-      <SectionTitle>Recent</SectionTitle>
-      <List>
-        {(recent ?? []).map((t) => (
-          <ListRow
-            key={t.id}
-            tile={<Tile tone={txTile[t.kind].tone} size={38} radius={19}>{txTile[t.kind].g}</Tile>}
-            title={t.title}
-            sub={<span className="mono" style={{ color: 'var(--chain)', fontSize: 11.5 }}>{shortAddress(t.hash, 6, 4)}</span>}
-            right={
-              <div style={{ textAlign: 'right' }}>
-                <div className="mono" style={{ fontSize: 15, color: t.amountMinor > 0 ? 'var(--accent)' : 'var(--text)' }}>{usdt(t.amountMinor, { sign: true })}</div>
-                <div style={{ fontSize: 12, color: 'var(--muted)' }}>{monthDay(t.date)}</div>
-              </div>
-            }
-          />
-        ))}
-      </List>
-    </Screen>
-  )
-}
-
-/* ───────── 12 New goal ───────── */
-const AMOUNTS = [1000000, 2000000, 5000000]
-
-export function NewGoal() {
-  const nav = useNavigate()
-  const toast = useToast()
-  const { data: rates } = useRates()
-  const create = useCreateGoal()
-  const [name, setName] = useState('School fees')
-  const [target, setTarget] = useState('1200')
-  const [amount, setAmount] = useState(2000000)
-  const [freq, setFreq] = useState<Frequency>('weekly')
-  const [type, setType] = useState<PotType>('flexible')
-  const targetMinor = Math.round(Number(target || 0) * 100)
-  const rate = rates?.ngnPerUsdt ?? 1500
-  const each = ngnToUsdt(amount, rate)
-  const by = useMemo(() => projectGoal(targetMinor, each, freq, firstDebitDate(freq, new Date(MOCK_TODAY))), [targetMinor, each, freq])
-
-  return (
-    <Screen
-      header={<Header title="New goal" />}
-      footer={
-        <>
-          <div className={u.dashed} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px' }}>
-            <span style={{ fontSize: 14, color: 'var(--body)' }}>You’ll reach it by</span>
-            <b style={{ color: 'var(--accent)', fontWeight: 600, fontSize: 15.5 }}>
-              {targetMinor > 0 ? `${monthYear(by)} · ${usdt(each)} USDT each` : '—'}
-            </b>
-          </div>
-          <Button
-            disabled={!name.trim() || targetMinor <= 0}
-            loading={create.isPending}
-            onClick={async () => {
-              await create.mutateAsync({ name: name.trim(), targetMinor, amountNgnMinor: amount, frequency: freq, type })
-              toast(`${name.trim()} goal created`)
-              nav('/save')
-            }}
-          >
-            Create goal
-          </Button>
-        </>
-      }
-    >
-      <Stack gap={20}>
-        <TextField label="What are you saving for?" sans value={name} onChange={(e) => setName(e.target.value)} hint={<span style={{ color: 'var(--muted)' }}>EDIT</span>} />
-        <div>
-          <FieldLabel>Target</FieldLabel>
-          <div className={cx(u.field, u.fieldActive)} style={{ minHeight: 72 }}>
-            <input
-              aria-label="Target in USDT"
-              className={v.targetInput}
-              inputMode="numeric"
-              value={Number(target || 0).toLocaleString('en-US')}
-              onChange={(e) => setTarget(e.target.value.replace(/\D/g, '').slice(0, 7))}
-            />
-            <span className="mono" style={{ fontSize: 13, color: 'var(--muted)' }}>
-              USDT ≈ {ngn(usdtToNgn(targetMinor, rate), { compact: true })}
-            </span>
-          </div>
-        </div>
-        <div>
-          <FieldLabel>Take from my bank each time</FieldLabel>
-          <Chips options={AMOUNTS.map((a) => ({ value: a, label: ngn(a, { compact: true }) }))} value={amount} onChange={setAmount} />
-        </div>
-        <div>
-          <FieldLabel>How often</FieldLabel>
-          <Segmented options={FREQS} value={freq} onChange={setFreq} />
-        </div>
-        <div>
-          <FieldLabel>Pot type</FieldLabel>
-          <div className={v.twoUp}>
-            <button className={cx(u.radioCard, type === 'flexible' && u.radioOn, v.potType)} onClick={() => setType('flexible')} aria-pressed={type === 'flexible'}>
-              <div className={u.rowTitle}>Flexible</div>
-              <div className={u.rowSub}>Interest · 1% to take out early</div>
-            </button>
-            <button className={cx(u.radioCard, type === 'locked' && u.radioOn, v.potType)} onClick={() => setType('locked')} aria-pressed={type === 'locked'}>
-              <div className={u.rowTitle}>Locked</div>
-              <div className={u.rowSub}>More interest · 3/6/12 months</div>
-            </button>
-          </div>
-        </div>
-      </Stack>
-    </Screen>
-  )
-}
-
-/* ───────── 13 Locked savings ───────── */
-export function LockedSavings() {
-  const toast = useToast()
-  const { data: locked } = useLocked()
-  const { data: options } = useLockOptions()
-  const lockMut = useLock()
-  const [months, setMonths] = useState(6)
-  const [step, setStep] = useState<'pick' | 'amount'>('pick')
-  const [amount, setAmount] = useState('100')
-  const l = locked?.[0]
-  const fee = l ? Math.round((l.amountMinor * l.breakFeePct) / 100) : 0
-  const lose = l ? fee + l.interestMinor : 0
-
-  return (
-    <Screen
-      header={<Header title="Locked Savings" />}
-      footer={
-        <Button
-          loading={lockMut.isPending}
-          icon={step === 'amount' ? 'lock' : undefined}
-          onClick={async () => {
-            if (step === 'pick') return setStep('amount')
-            await lockMut.mutateAsync({ months, amountMinor: Math.round(Number(amount) * 100) })
-            toast(`${amount} USDT locked for ${months} months`)
-            setStep('pick')
-          }}
-        >
-          {step === 'pick' ? 'Lock More Money' : `Lock ${amount || 0} USDT for ${months} mo`}
+        <Button icon="plus" className={v.headBtnDesk} onClick={() => nav('/save/new')}>
+          New plan
         </Button>
-      }
-    >
-      {l ? (
-        <div className={v.lockCard}>
-          <Row justify="space-between">
-            <span className="mono" style={{ fontSize: 11, letterSpacing: 1.4, color: '#7FB7FF' }}>
-              LOCKED · {l.months} MONTHS
-            </span>
-            <Icon name="lock" size={18} color="#7FB7FF" />
-          </Row>
-          <div style={{ marginTop: 12 }}>
-            <Amount minor={l.amountMinor} size={52} ccy="USDT" color="#ECEAE4" ccyColor="#8C9198" style={{ ['--faint' as string]: '#8C9198' }} />
-          </div>
-          <Progress value={l.elapsedMonths / l.months} color="#7FB7FF" track="rgba(255,255,255,0.1)" height={7} style={{ marginTop: 18 }} />
-          <Row justify="space-between" style={{ marginTop: 10 }}>
-            <span className={v.lockMeta}>
-              {l.elapsedMonths} OF {l.months} MONTHS
-            </span>
-            <span className={v.lockMeta} style={{ color: '#ECEAE4' }}>
-              OPENS {fullDate(l.opensAt).toUpperCase()}
-            </span>
-          </Row>
-          <div className={v.twoUp} style={{ marginTop: 20 }}>
-            <div className={v.lockStat}>
-              <span className={v.lockMeta}>INTEREST SO FAR</span>
-              <span className="mono" style={{ color: '#C6F35E', fontSize: 17 }}>{usdt(l.interestMinor, { sign: true })}</span>
+      </header>
+
+      {/* ── Summary: one card on phones, a row of stat cards on wider screens ── */}
+      {summary ? (
+        <section className={v.summary}>
+          <div className={v.summaryMain}>
+            <Eyebrow>Total saved</Eyebrow>
+            <div className={v.summaryAmount}>
+              <Money value={summary.total} size={44} ccy="USDT" />
             </div>
-            <div className={v.lockStat}>
-              <span className={v.lockMeta}>RATE (VARIES)</span>
-              <span className="mono" style={{ color: '#ECEAE4', fontSize: 17 }}>{l.rateLabel}</span>
+            <div className={v.summaryMeta}>
+              {summary.active_plans} active plan{summary.active_plans === 1 ? '' : 's'}
             </div>
           </div>
-        </div>
+          <div className={v.summaryInterest}>
+            <Eyebrow>Interest earned</Eyebrow>
+            <div className={v.interestValue}>+{money(summary.interest_earned)}</div>
+            <div className={v.summaryMeta}>Added to your plans daily</div>
+          </div>
+          <SplitItem tone="sig" label="In goals" value={summary.goal} />
+          <SplitItem tone="chain" label="Locked" value={summary.locked} />
+        </section>
       ) : (
-        <Skeleton h={250} r={22} />
+        <Skeleton h={150} r={20} style={{ marginTop: 22 }} />
       )}
 
-      <SectionTitle style={{ marginTop: 26 }}>Start a new lock</SectionTitle>
-      <div className={v.lockOptions}>
-        {(options ?? []).map((o) => (
-          <motion.button key={o.months} whileTap={{ scale: 0.97 }} className={cx(v.lockOpt, o.months === months && v.lockOptOn)} onClick={() => setMonths(o.months)} aria-pressed={o.months === months}>
-            <span className={v.lockOptTitle}>{o.months} mo</span>
-            <span className="mono" style={{ fontSize: 11 }}>{o.rateLabel}</span>
-          </motion.button>
-        ))}
+      <div className={v.layout}>
+        {/* ── Plans ── */}
+        <section className={v.plansArea}>
+          <div className={v.sectionHead}>
+            <h2>Your plans</h2>
+            {active.length > 0 && <span className={v.count}>{active.length} active</span>}
+          </div>
+          {plans === undefined ? (
+            <div className={v.planGrid}>
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} h={160} r={20} />
+              ))}
+            </div>
+          ) : active.length === 0 ? (
+            <div className={v.emptyCard}>
+              <EmptyState icon="vault" title="No savings plans yet" action={<Button onClick={() => nav('/save/new')}>Start a plan</Button>}>
+                Set a goal you can reach at your own pace, or lock money away for a higher fixed rate.
+              </EmptyState>
+            </div>
+          ) : (
+            <div className={v.planGrid}>
+              {active.map((p) => (
+                <PlanCard key={p.id} plan={p} />
+              ))}
+              <button className={v.newTile} onClick={() => nav('/save/new')}>
+                <Tile size={44} radius={14}>
+                  <Icon name="plus" size={20} />
+                </Tile>
+                <span className={v.newTileTitle}>New plan</span>
+                <span className={v.newTileSub}>Goal or locked</span>
+              </button>
+            </div>
+          )}
+
+          {past.length > 0 && (
+            <div className={v.past}>
+              <button className={v.pastToggle} onClick={() => setShowPast((s) => !s)} aria-expanded={showPast}>
+                <span>Matured and closed ({past.length})</span>
+                <Icon name="chevronRight" size={16} className={cx(v.pastChev, showPast && v.pastChevOpen)} />
+              </button>
+              {showPast && (
+                <div className={v.pastList}>
+                  {past.map((p) => (
+                    <PastRow key={p.id} plan={p} onClick={() => nav(`/save/${p.id}`)} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+
+        {/* ── Rates ── */}
+        <aside className={v.ratesArea}>
+          <div className={v.ratesPanel}>
+            <div className={v.sectionHead}>
+              <h2>Current rates</h2>
+              <span className={v.count}>Per year</span>
+            </div>
+            {rates ? (
+              <>
+                <div className={v.rateGrid}>
+                  {rates.products.map((r) => (
+                    <RateTile key={`${r.type}-${r.lock_months}`} product={r} onClick={() => nav('/save/new', { state: { type: r.type, lockMonths: r.lock_months } })} />
+                  ))}
+                </div>
+                <p className={v.terms}>{rates.terms}</p>
+              </>
+            ) : (
+              <Skeleton h={180} />
+            )}
+          </div>
+        </aside>
       </div>
-      <p style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 10 }}>Longer locks earn more. Rates go up and down and are not promised.</p>
-
-      {step === 'amount' && (
-        <div style={{ marginTop: 18 }}>
-          <TextField label="How much to lock (USDT)" inputMode="decimal" autoFocus value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ''))} hint="FROM DEPOSIT" />
-        </div>
-      )}
-
-      {l && (
-        <div className={v.breakCard}>
-          <Row justify="space-between">
-            <span style={{ color: 'var(--flare)', fontWeight: 500, fontSize: 15.5 }}>Break lock early</span>
-            <span className="mono" style={{ color: 'var(--flare)', fontSize: 13 }}>-{usdt(lose)} USDT</span>
-          </Row>
-          <p style={{ fontSize: 14, color: 'var(--body)', marginTop: 8, lineHeight: '21px' }}>
-            You pay a {l.breakFeePct}% fee ({usdt(fee)}) and lose the interest earned ({usdt(l.interestMinor)}). You’d get {usdt(l.amountMinor - lose)} USDT.
-          </p>
-        </div>
-      )}
     </Screen>
+  )
+}
+
+function SplitItem({ tone, label, value }: { tone: 'sig' | 'chain'; label: string; value: string }) {
+  return (
+    <div className={v.splitItem}>
+      <span className={v.splitDot} data-tone={tone} />
+      <span className={v.splitLabel}>{label}</span>
+      <span className={v.splitValue}>
+        {money(value)}
+        <span className={v.splitCcy}> USDT</span>
+      </span>
+    </div>
+  )
+}
+
+function RateTile({ product, onClick }: { product: SavingsProduct; onClick: () => void }) {
+  const locked = product.type === 'locked'
+  return (
+    <button className={cx(v.rateTile, locked && v.rateTileLocked)} onClick={onClick} aria-label={`Start a ${locked ? `${lockLabel(product.lock_months)} locked` : 'goal'} plan at ${percent(product.annual_rate_percent)} a year`}>
+      <span className={v.rateName}>
+        <Icon name={locked ? 'lock' : 'target'} size={14} />
+        {locked ? lockLabel(product.lock_months) : 'Goal'}
+      </span>
+      <span className={v.rateValue}>{percent(product.annual_rate_percent)}</span>
+      <span className={v.rateType}>{rateTypeLabel(product.rate_type)}</span>
+    </button>
+  )
+}
+
+function PastRow({ plan, onClick }: { plan: SavingsPlan; onClick: () => void }) {
+  const when = plan.status === 'matured' ? plan.matured_at : plan.closed_at
+  return (
+    <button className={v.pastRow} onClick={onClick}>
+      <Tile size={36} radius={10} tone={plan.type === 'locked' ? 'chain' : 'neutral'}>
+        <Icon name={plan.type === 'locked' ? 'lock' : 'target'} size={16} />
+      </Tile>
+      <span className={v.pastMain}>
+        <span className={v.pastName}>{plan.name}</span>
+        <span className={v.pastSub}>
+          {plan.status === 'matured' ? 'Matured' : 'Closed'}
+          {when ? ` ${fullDate(when)}` : ''} · +{money(plan.interest.earned)} interest
+        </span>
+      </span>
+      <span className={v.pastValue}>{money(plan.balance)}</span>
+      <Icon name="chevronRight" size={16} className={v.chev} />
+    </button>
   )
 }

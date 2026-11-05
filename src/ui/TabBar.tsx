@@ -8,7 +8,7 @@ const tabs: { to: string; label: string; icon: IconName }[] = [
   { to: '/home', label: 'Home', icon: 'home' },
   { to: '/save', label: 'Save', icon: 'vault' },
   { to: '/circles', label: 'Circles', icon: 'circles' },
-  { to: '/profile', label: 'Profile', icon: 'user' },
+  { to: '/profile', label: 'Me', icon: 'user' },
 ]
 
 export function TabBar() {

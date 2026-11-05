@@ -25,11 +25,17 @@
   --text: #ecEAE4;
   color-scheme: dark;
 }
-@media (display-mode: browser) and (min-width: 520px) {
-  /* Desktop preview: emulate the device status bar height so layouts match the 430×932 boards. */
+/* Tablet and desktop: a side navigation replaces the bottom tab bar, and content sits in wider columns. */
+@media (min-width: 768px) {
   :root {
-    --safe-top: 54px;
-    --safe-bottom: 34px;
+    --gutter: 32px;
+    --tabbar-space: 0px;
+    --safe-top: 0px;
+  }
+}
+@media (min-width: 1100px) {
+  :root {
+    --gutter: 48px;
   }
 }
 

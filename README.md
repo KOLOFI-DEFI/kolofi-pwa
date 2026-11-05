@@ -1,8 +1,14 @@
 # Kólófi PWA
 
-An installable web app for Kólófi. Users save in USDT straight from Naira and join on-chain ajo circles. The app copies the 22 screens on the design boards (`design/boards`) in light and dark mode.
+The Kólófi web app: save in USDT, earn daily interest, and join ajo circles where nobody can run with the pot. It runs against the Kólófi API (`kolofi-backend`, `/api/v1`) and installs as a PWA.
 
-Its sister repo is **kolofi-mobile** (Expo React Native). Both apps run on the same `src/core`, and this repo owns it.
+Every screen has two real layouts, not one stretched one:
+
+- **Phone (<768px):** the mobile design from the boards (`design/frames`, `design/Hackathon project help`): full-screen pages, sticky actions, the floating tab bar.
+- **Tablet (768–1099px):** an icon rail on the left and two-column grids.
+- **Desktop (≥1100px):** a full side navigation and desktop compositions: dashboards on a 12-column grid, tables for history, forms beside a live summary panel, detail pages with a side panel of facts and actions, dialogs for confirmations, and a split-screen sign-in.
+
+Its sister repo is **kolofi-mobile** (Expo React Native), which copies `src/core` from here.
 
 ## Quick start
 
@@ -14,17 +20,17 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173. The app starts at the intro. In mock mode the OTP code is `123456`.
+Open http://localhost:5173. With the default mock API, sign in as `ada@example.com` / `Kolofi2026!`. The transaction PIN is `482915` and the email code is `123456`.
 
-To jump straight to any screen, open http://localhost:5173/dev/kit. Tap **Unlock app routes** to skip sign-up. The kit page also shows every colour token and UI component, and has a light/dark switch.
+To use the real API, start the backend (`php artisan serve`, or Herd) and run with `VITE_API_MODE=http` (see Environment). The dev server proxies `/api` to it, so there's no CORS setup in development.
 
 | Script | What it does |
 |---|---|
 | `npm run dev` | Starts the Vite dev server. |
 | `npm run build` | Typechecks, then builds to `dist/` with a service worker and manifest. |
 | `npm run preview` | Serves the production build. Use this to test install and offline. |
-| `npm test` | Runs Vitest on the formatters and the mock API contract. |
-| `npm run visual` | Uses Playwright to screenshot every screen in light and dark, then diffs each one against `design/frames`. |
+| `npm test` | Runs Vitest on the formatters and the mock API. |
+| `npm run visual` | Screenshots every screen at phone (430×932) and desktop (1440×900) size in light and dark, and diffs the phone shots against `design/frames`. |
 
 ## Environment
 
@@ -32,110 +38,65 @@ Copy `.env.example` to `.env`:
 
 | Var | Values |
 |---|---|
-| `VITE_API_MODE` | `mock` (default): in-memory backend that returns the design data. `http`: the real API. |
-| `VITE_API_BASE_URL` | Base URL of the REST API, used only when the mode is `http`. |
+| `VITE_API_MODE` | `mock` (default): in-memory API with demo data. `http`: the real Kólófi API. |
+| `VITE_API_BASE_URL` | API root in http mode. `/api/v1` in development (proxied); the full URL in production, e.g. `https://api.kolofi.ng/api/v1`. |
+| `KOLOFI_API_PROXY` | Where the dev server sends `/api` requests. Default `http://127.0.0.1:8000`. |
+
+In production the API must allow the app's origin in CORS (`config/cors.php` in the backend; Laravel's default allows all origins on `api/*`).
 
 ## Project layout
 
 ```
-design/
-  boards/          original design exports (light + dark rows)
-  frames/          one 430×932 crop per screen, used by `npm run visual`
 src/
   core/            SHARED with kolofi-mobile. Platform-free TypeScript only.
-    tokens.ts      colours (light/dark), type scale, radii, spacing
-    theme.ts       system/light/dark resolution
-    types.ts       domain models (amounts are integer minor units)
-    format.ts      ₦ / USDT / dates / addresses / countdown
-    icons.ts       icon geometry (rendered by <svg> here, react-native-svg there)
-    api/           KolofiApi contract, mock adapter + fixtures, http adapter
+    types.ts       API response shapes (money is a decimal string, e.g. "74.5")
+    api/           KolofiApi contract, http adapter (every route), mock adapter
     data.ts        TanStack Query hooks. Screens use only these.
-  app/             router (route table + sign-up guard), ThemeProvider
-  state/           zustand stores: theme preference, session/sign-up stage
-  ui/              design-system components (index.tsx), charts, TabBar
-  screens/         one folder per area: onboarding, auth, home, money, save, circles, profile, dev
-e2e/               visual comparison suite
+    format.ts      money / dates / addresses
+    tokens.ts      colours (light/dark), type scale, radii, spacing
+    icons.ts       icon geometry
+  app/             router (route table + set-up guards), ThemeProvider
+  state/           zustand stores: session (token, user), theme
+  ui/              design system (index.tsx), responsive shell (Shell.tsx), charts, tab bar
+  screens/         auth, home, wallet, activity, save, circles, profile
+e2e/               visual suite
 ```
 
 ## Screens and routes
 
-| # | Board | Route |
-|---|---|---|
-| 01–03 | Intro: Save / Circles / On-chain | `/intro/save`, `/intro/circles`, `/intro/onchain` |
-| 04 | Phone number | `/auth/phone` |
-| — | OTP (**not on the boards**; added in the same style) | `/auth/otp` |
-| 05 | BVN / NIN | `/auth/kyc` |
-| 06 | Wallet ready | `/auth/wallet-ready` |
-| 07 | Link bank & auto-save | `/auth/auto-save` |
-| 08 | Home | `/home` |
-| 09 | Add money | `/money/add` |
-| 10 | Withdraw | `/money/withdraw` |
-| 11 | Save | `/save` |
-| 12 | New goal | `/save/new-goal` |
-| 13 | Locked savings | `/save/locked` |
-| 14 | Circles (join) | `/circles` |
-| 15 | Deposit & pick turn | `/circles/:id/join` |
-| 16 | Circle detail | `/circles/:id` |
-| 17 | Your turn: pot collected | `/circles/:id/payout` |
-| 18 | Notifications | `/notifications` |
-| 19 | Missed payment | `/circles/:id/missed` |
-| 20 | Profile (plus an **Appearance** row: System / Light / Dark) | `/profile` |
-| 21 | Trust score | `/trust` |
-| 22 | WhatsApp | `/whatsapp` |
+| Area | Routes |
+|---|---|
+| Sign-in and set-up | `/welcome`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, `/auth/verify` (email code), `/auth/pin` (transaction PIN) |
+| Home | `/home` |
+| Wallet | `/wallet`, `/wallet/add` (deposit address), `/wallet/withdraw`, `/wallet/withdrawals/:id` |
+| Activity | `/activity` (history and statements) |
+| Save | `/save`, `/save/new`, `/save/:id` |
+| Circles | `/circles`, `/circles/packages/:id` (join), `/circles/join-code`, `/circles/:id`, `/circles/market` (waitlist, seats for sale, transfers) |
+| Account | `/profile`, `/notifications`, `/reputation` |
 
-How sign-up gates the app:
+How set-up gates the app (`state/session.ts`, `stageOf`): no token → welcome/login; email not verified → `/auth/verify`; no transaction PIN → `/auth/pin`; otherwise the app. A 401 from the API signs the member out.
 
-- App routes stay locked until sign-up reaches `stage = ready`. `/` sends the user back to wherever they left off.
-- The payout and missed-payment screens open from the circle detail's **⋯** menu, and also from notifications.
+Every money move asks for the transaction PIN in a dialog (`usePin()` in `ui/index.tsx`). Money routes send an `Idempotency-Key` automatically.
+
+Features the API marks `coming_soon` (Naira funding and withdrawals, BVN/NIN, phone verification, push, WhatsApp, crypto swap) are shown as disabled "Coming soon" options.
 
 ## Design system rules
 
-- **Use tokens only.** Colours come from `core/tokens.ts`. `ThemeProvider` turns them into CSS variables such as `--sig`, `--surface2` and `--on-sig`. Don't hard-code hex values in screens. The one exception is the always-dark ink cards (`--ink`).
-- **Use the type roles.**
-  - Young Serif: balances and titles.
-  - Figtree: UI text.
-  - DM Mono: eyebrows, amounts in rows, addresses, and the countdown.
-- **Mind the units.** The boards are 430×932 at 1pt = 1px. The gutter is 24px, buttons are 56px tall and fields are 60px.
-- **Theme.** The app follows the phone's setting by default. Users can override it under Profile → Appearance, and the choice is saved in `localStorage` as `kolofi.theme`. A script in `index.html` applies the theme before first paint, so there's no flash.
+- **Use tokens only.** Colours come from `core/tokens.ts`; `ThemeProvider` turns them into CSS variables such as `--sig`, `--surface2` and `--on-sig`. The exceptions are the always-dark ink cards and the lime next-payment card.
+- **Type roles.** Young Serif for balances and titles, Figtree for UI text, DM Mono for eyebrows, amounts in rows, addresses and codes.
+- **Two layouts per screen.** Write layout in each screen's CSS module with `@media (min-width: 768px)` and `@media (min-width: 1100px)` blocks. `screens/home` is the reference: the phone list becomes a desktop table, quick-action tiles become header buttons, and a side column appears only on desktop. Don't ship a phone layout centred on a desktop page.
+- **Theme.** The app follows the system setting by default; members can override it in the sidebar or under Profile → Appearance. The choice is saved as `kolofi.theme`, and a script in `index.html` applies it before first paint.
 
 ## Adding a screen
 
-1. If the screen needs new data, add the model to `core/types.ts` and the method to `core/api/contract.ts`. Then implement it in **both** `mock.ts` (with fixtures) and `http.ts` (add the route).
+1. If it needs new data, add the shape to `core/types.ts`, the method to `core/api/contract.ts`, and implement it in `http.ts` (the route) and `mock.ts` (demo data).
 2. Add a hook to `core/data.ts`.
-3. Build the screen in `src/screens/<area>/` from `@/ui` components.
-4. Register the route in `src/app/router.tsx`.
-5. If there's a design frame for it, add it to `e2e/screens.ts`.
-6. Run `npm run sync:core` in kolofi-mobile and port the screen there with the same component names.
-
-## Moving to the real backend
-
-- Switch with `VITE_API_MODE=http`. Screens don't change.
-- `src/core/api/http.ts` holds the proposed REST route table. Share it with the backend team as the contract, and edit only that file if their paths differ.
-- Errors come back as `ApiError(status, code, message)`.
-- Auth sends a bearer token from the session store.
-- Amounts are integer minor units: USDT cents and Naira kobo.
-
-Open items for the backend:
-
-- Kólófi's WhatsApp number (`KOLOFI_WHATSAPP` in `screens/profile/Profile.tsx`).
-- The block explorer to link to. It currently points at basescan.org.
-- The rules for spot dates and fees. The mock uses a 1% contribution fee and a 0.5% pot fee.
-
-## Checking fidelity
-
-```bash
-npm run visual
-```
-
-This writes `e2e/__diff__/NN-name-{light,dark}.{app,diff}.png` for every screen. The design frames include the phone bezel and status bar, so a small vertical offset is expected. Fix any layout drift you see in the diffs.
+3. Build the screen in `src/screens/<area>/` from `@/ui` components, with phone and desktop layouts.
+4. Register the route in `src/app/router.tsx` (inside `AppShell` for signed-in pages).
+5. Add it to `e2e/screens.ts`.
 
 ## Deploying
 
-- `npm run build` produces a static `dist/` folder. Host it on any static host (Vercel, Netlify, Cloudflare Pages, S3 + CloudFront).
-- Set up an SPA fallback so every path serves `index.html`.
+- `npm run build` produces a static `dist/`. Host it on any static host with an SPA fallback so every path serves `index.html`.
+- Build with `VITE_API_MODE=http` and `VITE_API_BASE_URL` set to the API's public URL.
 - The service worker precaches the app shell, so the app opens offline. Data still needs the network.
-- To test installing, run `npm run preview` and open it in Chrome on Android, or use "Add to Home Screen" in Safari on iOS.
-
-## Sharing `core` with mobile
-
-For now, `kolofi-mobile` copies `src/core` with `npm run sync:core`. Each copied file is stamped as generated, so edit `core` **here** only. When the API settles, publish `core` as a private `@kolofi/core` package (npm or GitHub Packages) and depend on it from both apps.

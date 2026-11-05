@@ -1,7 +1,84 @@
-.group {
-  margin: 24px 0 10px;
+/* ═══ Profile ═══
+   Phone (board 20): serif title, identity card with reputation badge, then settings groups as
+   eyebrow + list card, and a full-width Log out at the bottom.
+   Tablet: groups become titled panels.
+   Desktop (≥1100): a settings page. Sticky profile summary on the left (verification checklist and
+   links), sections as panels on the right, Log out in the page header. */
+
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 14px;
 }
-.trustBadge {
+.title {
+  font-family: var(--font-display);
+  font-size: 34px;
+  line-height: 40px;
+  font-weight: 400;
+  letter-spacing: -0.4px;
+}
+.lead {
+  display: none;
+  color: var(--body);
+  font-size: 15px;
+  margin-top: 4px;
+}
+.headBtn {
+  display: none;
+}
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  margin-top: 20px;
+}
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.notices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+/* ── Identity card ── */
+.idCard {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 18px;
+}
+:global([data-theme='dark']) .idCard {
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+.idTop {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.idText {
+  flex: 1;
+  min-width: 0;
+}
+.idName {
+  font-size: 18px;
+  font-weight: 500;
+}
+.idEmail {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.repBadge {
   width: 56px;
   height: 52px;
   border-radius: 12px;
@@ -13,51 +90,406 @@
   background: var(--sig-soft);
   color: var(--accent);
   flex-shrink: 0;
+  transition: transform 0.15s var(--ease);
 }
-.level {
-  margin-top: 8px;
-  padding: 5px 12px;
-  border-radius: 999px;
-  background: var(--sig-tint);
-  color: var(--accent);
+.repBadge:active {
+  transform: scale(0.96);
+}
+.repScore {
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: 18px;
+}
+.repLabel {
+  font-family: var(--font-mono);
+  font-size: 9px;
   letter-spacing: 1px;
 }
-.twoUp {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 34px;
+.idExtra {
+  display: none;
 }
-.nextCard {
-  padding: 16px;
+
+/* ── Sections (phone: eyebrow over a list card) ── */
+.section {
+  margin-top: 24px;
+}
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.sectionTitle {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sectionDesc {
+  display: none;
+}
+.sectionBody {
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: 18px;
-  border: 1px dashed var(--line-strong);
+  overflow: hidden;
 }
-.waHero {
-  height: 130px;
-  display: grid;
-  place-items: center;
+:global([data-theme='dark']) .sectionBody {
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+.pad {
+  padding: 14px 16px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Rows */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+  min-height: 64px;
+  width: 100%;
+  text-align: left;
+}
+.sectionBody > .row + .row,
+.sectionBody > .appearance,
+.sectionBody > .row + .pad {
+  border-top: 1px solid var(--line);
+}
+.sectionBody > .appearance:first-child {
+  border-top: 0;
+}
+.rowLink {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.rowLink:hover {
+  background: color-mix(in srgb, var(--surface2) 55%, transparent);
+}
+.rowMain {
+  flex: 1;
+  min-width: 0;
+}
+.rowTitle {
+  font-size: 15.5px;
+  font-weight: 500;
+}
+.rowSub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+.rowRight {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+.rowAction {
+  display: none;
+}
+.chev {
+  color: var(--faint);
+  flex-shrink: 0;
+}
+.score {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  color: var(--accent);
+}
+
+.appearance {
+  padding-bottom: 14px;
+}
+.appearance .row {
+  padding-bottom: 10px;
+}
+.segWrap {
+  padding: 0 16px;
+}
+
+.phoneLogout {
+  margin-top: 24px;
+}
+
+/* ── Dialog forms ── */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 12px;
+}
+.rules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.rules span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.ruleOk {
+  color: var(--accent);
+}
+.err {
+  color: var(--flare);
+  font-size: 14px;
   margin-top: 4px;
 }
-.waIcon {
-  width: 84px;
-  height: 84px;
-  border-radius: 22px;
-  display: grid;
-  place-items: center;
-  background: var(--whatsapp);
-  box-shadow: 0 0 60px 6px rgba(37, 211, 102, 0.35);
-}
-.warn {
+.stepDots {
   display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  padding: 16px 18px;
-  border-radius: 16px;
-  border: 1px solid var(--flare);
-  font-size: 13.5px;
-  line-height: 20px;
+  gap: 6px;
+}
+.stepDots span {
+  height: 4px;
+  flex: 1;
+  border-radius: 2px;
+  background: var(--surface2);
+}
+.stepDots .stepOn {
+  background: var(--sig);
+}
+.faqs {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+}
+.faq {
+  padding: 14px 0;
+}
+.faq + .faq {
+  border-top: 1px solid var(--line);
+}
+.faqQ {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 15px;
+}
+.faqA {
   color: var(--body);
+  font-size: 14.5px;
+  line-height: 21px;
+  margin-top: 4px;
+}
+
+/* ═══ Tablet: titled panels ═══ */
+@media (min-width: 768px) {
+  .head {
+    margin-top: 0;
+  }
+  .title {
+    font-size: 40px;
+    line-height: 46px;
+  }
+  .lead {
+    display: block;
+  }
+  .idCard {
+    padding: 22px 24px;
+    border-radius: 22px;
+  }
+  .section {
+    margin-top: 20px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 22px 24px 8px;
+  }
+  :global([data-theme='dark']) .section {
+    background: color-mix(in srgb, var(--surface) 70%, transparent);
+  }
+  .sectionHead {
+    align-items: flex-start;
+    margin-bottom: 6px;
+  }
+  .sectionTitle {
+    font-family: var(--font-sans);
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--text);
+  }
+  .sectionDesc {
+    display: block;
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+  .sectionBody,
+  :global([data-theme='dark']) .sectionBody {
+    background: none;
+    border: 0;
+    border-radius: 0;
+  }
+  .row {
+    padding: 14px 0;
+  }
+  .rowLink {
+    margin: 0 -12px;
+    padding: 14px 12px;
+    width: calc(100% + 24px);
+    border-radius: 14px;
+  }
+  .sectionBody > .rowLink + .rowLink {
+    border-top-color: transparent;
+  }
+  .pad,
+  .segWrap {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .appearance {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding-bottom: 0;
+  }
+  .appearance .row {
+    padding-bottom: 14px;
+  }
+  .segWrap {
+    width: 340px;
+    flex-shrink: 0;
+  }
+  .rowAction {
+    display: inline-flex;
+    align-items: center;
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .rowLink:hover .rowAction {
+    border-color: var(--text);
+  }
+  .rowAction ~ .chev,
+  .rowRight:has(.rowAction) + .chev {
+    display: none;
+  }
+  .phoneLogout {
+    width: auto;
+    align-self: flex-start;
+    padding: 0 22px;
+  }
+}
+
+/* ═══ Desktop: summary card left, panels right ═══ */
+@media (min-width: 1100px) {
+  .headBtn {
+    display: inline-flex;
+    width: auto;
+    height: 46px;
+    padding: 0 22px;
+    font-size: 15px;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 340px minmax(0, 1fr);
+    gap: 28px;
+    align-items: start;
+    margin-top: 28px;
+  }
+  .side {
+    position: sticky;
+    top: 28px;
+  }
+  .idCard {
+    padding: 26px 24px 12px;
+  }
+  .idTop {
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .idTop > :first-child {
+    width: 72px !important;
+    height: 72px !important;
+    font-size: 26px !important;
+  }
+  .idText {
+    order: 3;
+    flex-basis: 100%;
+  }
+  .idName {
+    font-family: var(--font-display);
+    font-size: 26px;
+    line-height: 32px;
+    font-weight: 400;
+  }
+  .repBadge {
+    margin-left: auto;
+  }
+  .idExtra {
+    display: block;
+  }
+  .since {
+    margin-top: 6px;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+  .checks {
+    list-style: none;
+    margin: 18px 0 0;
+    padding: 16px 0 4px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .checks li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+  }
+  .checkText {
+    flex: 1;
+  }
+  .check {
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    background: var(--surface2);
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .checkOn {
+    background: var(--sig-tint);
+    color: var(--accent);
+  }
+  .idLinks {
+    margin-top: 14px;
+    padding-top: 6px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+  }
+  .idLinks .rowLink {
+    min-height: 56px;
+    padding: 10px 12px;
+  }
+  .linksSection {
+    display: none;
+  }
+  .main > .section:first-of-type,
+  .main > :first-child {
+    margin-top: 0;
+  }
+  .phoneLogout {
+    display: none;
+  }
 }
