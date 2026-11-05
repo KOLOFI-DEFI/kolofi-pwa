@@ -1,0 +1,110 @@
+.terms {
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.cc {
+  padding: 0 16px;
+  gap: 10px;
+}
+.ccText {
+  font-size: 16px;
+  font-weight: 500;
+}
+.flag {
+  display: inline-flex;
+  width: 22px;
+  height: 16px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.flag i {
+  flex: 1;
+  background: #008751;
+}
+.flag i:nth-child(2) {
+  background: #fff;
+}
+.otp {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin-top: 28px;
+  cursor: text;
+}
+.otpBox {
+  height: 60px;
+  padding: 0;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 24px;
+}
+.walletStage {
+  position: relative;
+  height: 330px;
+  display: grid;
+  place-items: center;
+}
+.walletBox {
+  width: 130px;
+  height: 134px;
+  border-radius: 18px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #23272b, #0d0f12 70%);
+  box-shadow: 0 30px 50px -20px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(198, 243, 94, 0.5), 0 0 60px -10px var(--glow);
+}
+.walletLid {
+  height: 66px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px 18px 0 0;
+  background: linear-gradient(160deg, #e2ff8a 0%, #c6f35e 55%, #a9da3a 100%);
+}
+.walletShadow {
+  position: absolute;
+  bottom: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 180px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 45%, transparent), transparent);
+}
+:global([data-theme='dark']) .walletShadow {
+  background: radial-gradient(closest-side, rgba(198, 243, 94, 0.5), transparent);
+}
+.netDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.banks {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.bank {
+  height: 84px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12.5px;
+  transition: border-color 0.2s;
+}
+.bankOn,
+:global([data-theme='dark']) .bankOn {
+  border: 1.5px solid var(--accent);
+}
+.bankLogo {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}

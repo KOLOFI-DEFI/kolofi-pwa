@@ -1,0 +1,215 @@
+.skip {
+  position: absolute;
+  top: calc(var(--safe-top) + 14px);
+  right: 24px;
+  z-index: 3;
+}
+.stage {
+  position: relative;
+  flex: 1;
+  min-height: 420px;
+  display: grid;
+  place-items: center;
+}
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.cta {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px 0 calc(var(--safe-bottom) + 6px);
+}
+.login {
+  text-align: center;
+  font-size: 14px;
+  color: var(--body);
+}
+.login b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Save illustration */
+.boxWrap {
+  position: relative;
+  width: 300px;
+  height: 280px;
+}
+.box {
+  position: absolute;
+  left: 76px;
+  top: 30px;
+  width: 150px;
+  height: 150px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #1d2024, #0d0f12);
+  box-shadow: 0 30px 50px -20px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(198, 243, 94, 0.5);
+}
+.boxLid {
+  height: 76px;
+  border-radius: 20px 20px 0 0;
+  background: linear-gradient(160deg, #e2ff8a 0%, #c6f35e 55%, #a9da3a 100%);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 6px 10px -6px rgba(0, 0, 0, 0.4);
+}
+.slot {
+  width: 56px;
+  height: 14px;
+  border-radius: 8px;
+  background: #0e1013;
+  transform: rotate(-10deg);
+}
+.shadow {
+  position: absolute;
+  left: 50px;
+  top: 206px;
+  width: 200px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 45%, transparent), transparent);
+  filter: blur(4px);
+}
+:global([data-theme='dark']) .shadow {
+  background: radial-gradient(closest-side, rgba(198, 243, 94, 0.45), transparent);
+}
+.tag {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+.tagNaira {
+  left: -24px;
+  top: 52px;
+  background: var(--surface);
+  color: var(--text);
+  transform: rotate(-6deg);
+  box-shadow: 0 8px 20px -8px var(--shadow);
+}
+:global([data-theme='dark']) .tagNaira {
+  background: #15181d;
+  border: 1px solid var(--line-strong);
+}
+.tagUsdt {
+  left: 194px;
+  top: 172px;
+  background: var(--sig);
+  color: var(--on-sig);
+  transform: rotate(5deg);
+  padding: 12px 16px;
+  box-shadow: 0 10px 30px -6px var(--glow);
+}
+
+/* Circles illustration */
+.orbit {
+  position: relative;
+  width: 300px;
+  height: 300px;
+}
+.orbitCenter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.orbitAmount {
+  font-family: var(--font-display);
+  font-size: 30px;
+  line-height: 34px;
+}
+.orbitDot {
+  position: absolute;
+  border-radius: 50%;
+}
+.dotMember {
+  background: var(--sig);
+  border: 1.5px solid #5f7f12;
+  box-shadow: 0 0 18px -2px var(--glow);
+}
+.dotKolofi {
+  border: 1.5px dashed var(--chain);
+  background: color-mix(in srgb, var(--chain) 10%, transparent);
+}
+.dotHi {
+  background: #e7ffa6;
+  border: 1.5px solid #5f7f12;
+  box-shadow: 0 0 0 10px color-mix(in srgb, var(--sig) 28%, transparent), 0 0 40px var(--glow);
+}
+
+/* On-chain illustration */
+.blocks {
+  position: relative;
+  width: 304px;
+  height: 290px;
+}
+.block {
+  position: absolute;
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: color-mix(in srgb, var(--surface) 58%, transparent);
+  border: 1px solid color-mix(in srgb, var(--surface) 70%, transparent);
+  backdrop-filter: blur(6px);
+}
+:global([data-theme='dark']) .block {
+  background: rgba(20, 23, 27, 0.75);
+  border-color: var(--line-strong);
+}
+.blockMeta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.blockLine {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--body);
+}
+.blockLine .mono {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  color: var(--text);
+}
+.confirmed {
+  background: var(--surface);
+  border: 1.5px solid var(--accent);
+  box-shadow: 0 16px 40px -18px var(--shadow);
+}
+:global([data-theme='dark']) .confirmed {
+  background: #0d1008;
+  border-color: rgba(198, 243, 94, 0.6);
+  box-shadow: 0 0 40px -12px var(--glow);
+}
+.confirmed .blockLine {
+  font-size: 16px;
+  color: var(--text);
+  font-weight: 500;
+}
+.confirmed .blockLine .mono {
+  font-size: 17px;
+}
+.tx {
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--chain);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

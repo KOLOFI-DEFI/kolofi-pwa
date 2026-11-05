@@ -1,0 +1,116 @@
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: var(--sig);
+  color: #0e1013;
+  transition: background 0.25s;
+}
+.bannerOff {
+  background: var(--surface2);
+  color: var(--text);
+}
+.bannerTile {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: #0e1013;
+  color: #c6f35e;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.twoUp {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.potType {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  padding: 14px 14px;
+}
+.potType [class] + [class] {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.targetInput {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-family: var(--font-display);
+  font-size: 30px;
+  letter-spacing: -0.5px;
+  color: var(--text);
+  caret-color: var(--accent);
+}
+.lockCard {
+  position: relative;
+  overflow: hidden;
+  padding: 22px 22px 22px;
+  border-radius: 22px;
+  background: radial-gradient(70% 70% at 85% 10%, rgba(64, 104, 160, 0.45), transparent 60%), #0b0d10;
+  border: 1px solid rgba(127, 183, 255, 0.18);
+  color: #ecEAE4;
+}
+.lockMeta {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 1px;
+  color: #8c9198;
+}
+.lockStat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.lockOptions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.lockOpt {
+  height: 82px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+:global([data-theme='dark']) .lockOpt {
+  background: transparent;
+  border-color: var(--line-strong);
+}
+.lockOptOn,
+:global([data-theme='dark']) .lockOptOn {
+  background: var(--sig);
+  border-color: var(--sig);
+  color: var(--on-sig);
+}
+.lockOptTitle {
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 28px;
+}
+.breakCard {
+  margin-top: 26px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid var(--flare);
+  background: transparent;
+}

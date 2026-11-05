@@ -1,0 +1,103 @@
+@import '@fontsource/young-serif/400.css';
+@import '@fontsource/figtree/400.css';
+@import '@fontsource/figtree/500.css';
+@import '@fontsource/figtree/600.css';
+@import '@fontsource/figtree/700.css';
+@import '@fontsource/dm-mono/400.css';
+@import '@fontsource/dm-mono/500.css';
+
+/* Colour variables are injected from src/core/tokens.ts by ThemeProvider. These are only first-paint fallbacks. */
+:root {
+  --bg: #f3f2ee;
+  --text: #111311;
+  --font-display: 'Young Serif', Georgia, serif;
+  --font-sans: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, 'SFMono-Regular', monospace;
+  --gutter: 24px;
+  --safe-top: max(env(safe-area-inset-top), 12px);
+  --safe-bottom: max(env(safe-area-inset-bottom), 12px);
+  --tabbar-space: calc(68px + 28px + var(--safe-bottom));
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
+  --bg: #06070a;
+  --text: #ecEAE4;
+  color-scheme: dark;
+}
+@media (display-mode: browser) and (min-width: 520px) {
+  /* Desktop preview: emulate the device status bar height so layouts match the 430×932 boards. */
+  :root {
+    --safe-top: 54px;
+    --safe-bottom: 34px;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+  transition: background-color 0.25s var(--ease);
+}
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+button {
+  cursor: pointer;
+  border: 0;
+  background: none;
+  padding: 0;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.mono {
+  font-family: var(--font-mono);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
