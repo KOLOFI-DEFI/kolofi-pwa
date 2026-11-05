@@ -6,3 +6,4 @@ dev-dist
 test-results
 playwright-report
 e2e/__diff__
+design
